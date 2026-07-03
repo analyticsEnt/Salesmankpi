@@ -93,7 +93,6 @@ section[data-testid="stSidebar"]:hover {
             "📈  Sales Metrics",
             "💰  Outstanding",
             "📉  L10D Trend",
-            "🔍  GP Leakage",
         ], label_visibility="collapsed", key="main_nav")
 
         st.markdown("---")
@@ -122,7 +121,4 @@ section[data-testid="stSidebar"]:hover {
         show()
     elif page == "📉  L10D Trend":
         from pages_.l10d_trend import show
-        show()
-    elif page == "🔍  GP Leakage":
-        from pages_.gp_leakage import show
         show()
