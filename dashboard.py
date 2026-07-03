@@ -94,7 +94,6 @@ section[data-testid="stSidebar"]:hover {
             "💰  Outstanding",
             "📉  L10D Trend",
             "🔍  GP Leakage",
-            "📝  Reports",
         ], label_visibility="collapsed", key="main_nav")
 
         st.markdown("---")
@@ -126,7 +125,4 @@ section[data-testid="stSidebar"]:hover {
         show()
     elif page == "🔍  GP Leakage":
         from pages_.gp_leakage import show
-        show()
-    elif page == "📝  Reports":
-        from pages_.reports import show
         show()
