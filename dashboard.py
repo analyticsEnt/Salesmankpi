@@ -300,118 +300,87 @@ def show_dashboard():
     if "current_page" not in st.session_state:
         st.session_state.current_page = "📊  Sales"
     
-    col1, col2, col3 = st.columns([2, 3, 1])
-    
-    with col1:
-        st.markdown("""
-        <div class='top-nav-container'>
-            <div class='top-nav-header'>
-                <div class='top-nav-logo'>
-                    <div class='top-nav-logo-icon'>💊</div>
-                    <div class='top-nav-logo-text'>ENT-SalesPulse</div>
-                </div>
-                <div class='top-nav-user'>
-                    <span>👤</span>
-                    <span class='top-nav-user-name'>{}</span>
-                    <span style='color: #4b5563;'>•</span>
-                    <span class='top-nav-user-role'>{}</span>
-                </div>
+    # Display TOP NAVIGATION only (visible)
+    st.markdown(f"""
+    <div class='top-nav-container'>
+        <div class='top-nav-header'>
+            <div class='top-nav-logo'>
+                <div class='top-nav-logo-icon'>💊</div>
+                <div class='top-nav-logo-text'>ENT-SalesPulse</div>
             </div>
-            <div class='top-nav-items'>
-                <button class='top-nav-button active' id='nav-sales'>📊 Sales</button>
-                <button class='top-nav-button' id='nav-cp'>💊 CP Sales</button>
-                <button class='top-nav-button' id='nav-fy'>📅 FY Sales</button>
-                <button class='top-nav-button' id='nav-metrics'>📈 Metrics</button>
-                <button class='top-nav-button' id='nav-out'>💰 Outstanding</button>
-                <button class='top-nav-button' id='nav-trend'>📉 L10D Trend</button>
-                <button class='top-nav-logout' id='nav-logout'>🚪 Logout</button>
+            <div class='top-nav-user'>
+                <span>👤</span>
+                <span class='top-nav-user-name'>{full_name}</span>
+                <span style='color: #4b5563;'>•</span>
+                <span class='top-nav-user-role'>{role}</span>
             </div>
         </div>
-        
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {{
-            // Navigation button mapping
-            const navMap = {{
-                'nav-sales': '📊  Sales',
-                'nav-cp': '💊  CP Sales',
-                'nav-fy': '📅  FY Sales',
-                'nav-metrics': '📈  Sales Metrics',
-                'nav-out': '💰  Outstanding',
-                'nav-trend': '📉  L10D Trend'
-            }};
-            
-            // Logout button
-            const logoutBtn = document.getElementById('nav-logout');
-            if (logoutBtn) {{
-                logoutBtn.addEventListener('click', function(e) {{
-                    e.preventDefault();
-                    window.location.href = window.location.pathname;
-                }});
-            }}
-        }});
-        </script>
-        """.format(full_name, role), unsafe_allow_html=True)
-
-    with col2:
-        pass
-
-    with col3:
-        pass
+        <div class='top-nav-items'>
+            <button class='top-nav-button active' onclick="document.getElementById('nav_sales_hidden').click(); return false;" data-page="sales">📊 Sales</button>
+            <button class='top-nav-button' onclick="document.getElementById('nav_cp_hidden').click(); return false;" data-page="cp">💊 CP Sales</button>
+            <button class='top-nav-button' onclick="document.getElementById('nav_fy_hidden').click(); return false;" data-page="fy">📅 FY Sales</button>
+            <button class='top-nav-button' onclick="document.getElementById('nav_metrics_hidden').click(); return false;" data-page="metrics">📈 Metrics</button>
+            <button class='top-nav-button' onclick="document.getElementById('nav_out_hidden').click(); return false;" data-page="out">💰 Outstanding</button>
+            <button class='top-nav-button' onclick="document.getElementById('nav_trend_hidden').click(); return false;" data-page="trend">📉 L10D Trend</button>
+            <button class='top-nav-logout' onclick="document.getElementById('nav_logout_hidden').click(); return false;">🚪 Logout</button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
-    # PAGE SELECTION BUTTONS (Streamlit based)
+    # HIDDEN STREAMLIT BUTTONS (No Display - Functionality Only)
     # ══════════════════════════════════════════════════════════════
     
-    # Create button columns for navigation
-    btn_col1, btn_col2, btn_col3, btn_col4, btn_col5, btn_col6, btn_col7 = st.columns(7)
-    
-    with btn_col1:
-        if st.button("📊 Sales", key="nav_sales", use_container_width=True):
-            st.session_state.current_page = "📊  Sales"
-            st.rerun()
-    
-    with btn_col2:
-        if st.button("💊 CP", key="nav_cp", use_container_width=True):
-            st.session_state.current_page = "💊  CP Sales"
-            st.rerun()
-    
-    with btn_col3:
-        if st.button("📅 FY", key="nav_fy", use_container_width=True):
-            st.session_state.current_page = "📅  FY Sales"
-            st.rerun()
-    
-    with btn_col4:
-        if st.button("📈 Metrics", key="nav_metrics", use_container_width=True):
-            st.session_state.current_page = "📈  Sales Metrics"
-            st.rerun()
-    
-    with btn_col5:
-        if st.button("💰 Out", key="nav_out", use_container_width=True):
-            st.session_state.current_page = "💰  Outstanding"
-            st.rerun()
-    
-    with btn_col6:
-        if st.button("📉 Trend", key="nav_trend", use_container_width=True):
-            st.session_state.current_page = "📉  L10D Trend"
-            st.rerun()
-    
-    with btn_col7:
-        if st.button("🚪 Logout", key="nav_logout_btn", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user = None
-            st.rerun()
-
-    # Hide the button row with CSS
+    # Hide all button containers
     st.markdown("""
     <style>
-    [data-testid="column"]:has(> button) {
-        max-height: 1px;
-        overflow: hidden;
+    /* Hide button columns completely */
+    [data-testid="column"] {
+        display: none !important;
     }
     </style>
     """, unsafe_allow_html=True)
+    
+    # Hidden button row (triggers page changes)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    
+    with col1:
+        if st.button("📊 Sales", key="nav_sales_hidden", use_container_width=True):
+            st.session_state.current_page = "📊  Sales"
+            st.rerun()
+    
+    with col2:
+        if st.button("💊 CP Sales", key="nav_cp_hidden", use_container_width=True):
+            st.session_state.current_page = "💊  CP Sales"
+            st.rerun()
+    
+    with col3:
+        if st.button("📅 FY Sales", key="nav_fy_hidden", use_container_width=True):
+            st.session_state.current_page = "📅  FY Sales"
+            st.rerun()
+    
+    with col4:
+        if st.button("📈 Sales Metrics", key="nav_metrics_hidden", use_container_width=True):
+            st.session_state.current_page = "📈  Sales Metrics"
+            st.rerun()
+    
+    with col5:
+        if st.button("💰 Outstanding", key="nav_out_hidden", use_container_width=True):
+            st.session_state.current_page = "💰  Outstanding"
+            st.rerun()
+    
+    with col6:
+        if st.button("📉 L10D Trend", key="nav_trend_hidden", use_container_width=True):
+            st.session_state.current_page = "📉  L10D Trend"
+            st.rerun()
+    
+    with col7:
+        if st.button("🚪 Logout", key="nav_logout_hidden", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user = None
+            st.rerun()
 
     # ── Page Routing ──────────────────────────────────────────────────────────
     page = st.session_state.current_page
