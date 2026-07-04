@@ -77,18 +77,6 @@ def fmt_pct(n):
 def safe_div(numer, denom):
     return (numer / denom * 100) if denom else 0.0
 
-def weighted_avg(df, value_col, weight_col):
-    """Used ONLY for the 3 % metrics we can't exactly recompute from raw
-    sums (Sales% Top10/25 CX, CM Daily Ordering CX %) — the source formula
-    for these needs data (e.g. working-days elapsed) not present in this
-    table, so this is a weighted-average approximation, not an exact figure."""
-    if len(df) == 0:
-        return 0.0
-    w = df[weight_col]
-    if w.sum() == 0:
-        return df[value_col].mean()
-    return (df[value_col] * w).sum() / w.sum()
-
 
 def show():
     st.markdown("""
@@ -298,18 +286,27 @@ def show():
     overdue       = s('Overdue_Value')
     cx_locked     = s('CX_Locked')
 
-    # Exact recomputations (verified against raw source formulas)
-    ach_pct           = safe_div(current_month, target)
-    forcast_ach_pct   = safe_div(forcast, target)
-    lmtd_ach_pct      = safe_div(lmtd_sales, lm_target)
-    revived_sales_pct = safe_div(revived_sales, current_month)
-    new_sales_pct     = safe_div(new_cx_sales, current_month)
-    od_pct            = safe_div(overdue, total_od)
+    # ── % metrics ─────────────────────────────────────────────────
+    # "Ach %" is portfolio-weighted (sum of Current_Month / sum of Target)
+    # -- verified this matches the reference tool exactly.
+    ach_pct = safe_div(current_month, target)
 
-    # Approximated (weighted average) — see weighted_avg() docstring
-    top10_pct = weighted_avg(df, 'Salesage_From_TOP_10_CX', 'Current_Month') if 'Salesage_From_TOP_10_CX' in df.columns else 0.0
-    top25_pct = weighted_avg(df, 'Salesage_From_TOP_25_CX', 'Current_Month') if 'Salesage_From_TOP_25_CX' in df.columns else 0.0
-    cm_daily_pct = weighted_avg(df, 'CM_Daily_Ordering_CX_age', 'CMACX') if 'CM_Daily_Ordering_CX_age' in df.columns else 0.0
+    # All the other percentage metrics are a PLAIN AVERAGE of each ASM's
+    # own precomputed percentage column (per-rep average), NOT a
+    # sum(numerator)/sum(denominator) recompute. Verified against the
+    # reference tool row-by-row -- the two aggregation styles give very
+    # different numbers, and this is the one that matches.
+    def col_mean(col):
+        return df[col].mean() if col in df.columns and len(df) else 0.0
+
+    forcast_ach_pct   = col_mean('Forcast_ACh_age')
+    lmtd_ach_pct      = col_mean('LMTD_Ach_age')
+    top10_pct         = col_mean('Salesage_From_TOP_10_CX')
+    top25_pct         = col_mean('Salesage_From_TOP_25_CX')
+    cm_daily_pct      = col_mean('CM_Daily_Ordering_CX_age')
+    revived_sales_pct = col_mean('Revived_Cx_Sales_age')
+    new_sales_pct     = col_mean('New_Cx_Sales_age')
+    od_pct            = col_mean('OD_age')
 
     # ── Render KPI grid — 4 rows x 7 metrics, matching the sample layout ──
     row1 = [
