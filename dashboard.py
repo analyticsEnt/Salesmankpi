@@ -273,15 +273,28 @@ def show_dashboard():
     </style>
     
     <script>
-    // Navigation functionality
+    // Handle top nav button clicks
     document.addEventListener('DOMContentLoaded', function() {
-        const navButtons = document.querySelectorAll('.top-nav-button');
+        const navButtons = document.querySelectorAll('.top-nav-button[data-page]');
         navButtons.forEach(button => {
             button.addEventListener('click', function() {
-                navButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
+                const page = this.getAttribute('data-page');
+                // Update URL with query param for Streamlit to detect
+                const url = new URL(window.location);
+                url.searchParams.set('page', page);
+                window.location.href = url.toString();
             });
         });
+        
+        // Handle logout button
+        const logoutBtn = document.querySelector('.top-nav-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                const url = new URL(window.location);
+                url.searchParams.set('logout', 'true');
+                window.location.href = url.toString();
+            });
+        }
     });
     </script>
     """, unsafe_allow_html=True)
@@ -316,13 +329,13 @@ def show_dashboard():
             </div>
         </div>
         <div class='top-nav-items'>
-            <button class='top-nav-button active' onclick="document.getElementById('nav_sales_hidden').click(); return false;" data-page="sales">📊 Sales</button>
-            <button class='top-nav-button' onclick="document.getElementById('nav_cp_hidden').click(); return false;" data-page="cp">💊 CP Sales</button>
-            <button class='top-nav-button' onclick="document.getElementById('nav_fy_hidden').click(); return false;" data-page="fy">📅 FY Sales</button>
-            <button class='top-nav-button' onclick="document.getElementById('nav_metrics_hidden').click(); return false;" data-page="metrics">📈 Metrics</button>
-            <button class='top-nav-button' onclick="document.getElementById('nav_out_hidden').click(); return false;" data-page="out">💰 Outstanding</button>
-            <button class='top-nav-button' onclick="document.getElementById('nav_trend_hidden').click(); return false;" data-page="trend">📉 L10D Trend</button>
-            <button class='top-nav-logout' onclick="document.getElementById('nav_logout_hidden').click(); return false;">🚪 Logout</button>
+            <button class='top-nav-button' data-page="📊  Sales" style="background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; color: white !important; border-color: #6366f1 !important;">📊 Sales</button>
+            <button class='top-nav-button' data-page="💊  CP Sales">💊 CP Sales</button>
+            <button class='top-nav-button' data-page="📅  FY Sales">📅 FY Sales</button>
+            <button class='top-nav-button' data-page="📈  Sales Metrics">📈 Metrics</button>
+            <button class='top-nav-button' data-page="💰  Outstanding">💰 Outstanding</button>
+            <button class='top-nav-button' data-page="📉  L10D Trend">📉 L10D Trend</button>
+            <button class='top-nav-logout'>🚪 Logout</button>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -330,57 +343,22 @@ def show_dashboard():
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
-    # HIDDEN STREAMLIT BUTTONS (No Display - Functionality Only)
+    # STREAMLIT PAGE ROUTING (No hidden buttons needed)
     # ══════════════════════════════════════════════════════════════
     
-    # Hide all button containers
-    st.markdown("""
-    <style>
-    /* Hide button columns completely */
-    [data-testid="column"] {
-        display: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Handle page navigation from query params
+    if "page" in st.query_params:
+        page = st.query_params["page"]
+        st.session_state.current_page = page
+        # Clean up query params after reading
+        st.query_params.clear()
     
-    # Hidden button row (triggers page changes)
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
-    
-    with col1:
-        if st.button("📊 Sales", key="nav_sales_hidden", use_container_width=True):
-            st.session_state.current_page = "📊  Sales"
-            st.rerun()
-    
-    with col2:
-        if st.button("💊 CP Sales", key="nav_cp_hidden", use_container_width=True):
-            st.session_state.current_page = "💊  CP Sales"
-            st.rerun()
-    
-    with col3:
-        if st.button("📅 FY Sales", key="nav_fy_hidden", use_container_width=True):
-            st.session_state.current_page = "📅  FY Sales"
-            st.rerun()
-    
-    with col4:
-        if st.button("📈 Sales Metrics", key="nav_metrics_hidden", use_container_width=True):
-            st.session_state.current_page = "📈  Sales Metrics"
-            st.rerun()
-    
-    with col5:
-        if st.button("💰 Outstanding", key="nav_out_hidden", use_container_width=True):
-            st.session_state.current_page = "💰  Outstanding"
-            st.rerun()
-    
-    with col6:
-        if st.button("📉 L10D Trend", key="nav_trend_hidden", use_container_width=True):
-            st.session_state.current_page = "📉  L10D Trend"
-            st.rerun()
-    
-    with col7:
-        if st.button("🚪 Logout", key="nav_logout_hidden", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user = None
-            st.rerun()
+    # Handle logout from query parameter
+    if "logout" in st.query_params:
+        st.session_state.logged_in = False
+        st.session_state.user = None
+        st.query_params.clear()
+        st.rerun()
 
     # ── Page Routing ──────────────────────────────────────────────────────────
     page = st.session_state.current_page
