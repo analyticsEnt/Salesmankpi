@@ -153,11 +153,25 @@ def show():
         .kpi-grid { grid-template-columns: repeat(4, 1fr); }
     }
     @media screen and (max-width: 768px) {
-        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+        .kpi-card { padding: 8px 6px; }
     }
     @media screen and (max-width: 480px) {
-        .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .kpi-card { padding: 9px 7px; }
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .kpi-card { padding: 7px 5px; border-radius: 9px; }
+        .kpi-card::before { width: 3px; }
+        .kpi-label {
+            font-size: clamp(6.5px, 2.1vw, 8px);
+            letter-spacing: 0.2px;
+            margin-bottom: 2px;
+        }
+        .kpi-value {
+            font-size: clamp(11px, 3.6vw, 15px);
+        }
+    }
+    @media screen and (max-width: 360px) {
+        .kpi-grid { gap: 4px; }
+        .kpi-card { padding: 6px 4px; }
     }
     </style>
     """, unsafe_allow_html=True)
