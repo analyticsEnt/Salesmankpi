@@ -4,7 +4,7 @@ st.set_page_config(
     page_title="Ent_Retail Sales Dashboard",
     page_icon="💊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # Remove all gaps and hide collapse button
@@ -34,6 +34,35 @@ section[data-testid="stSidebar"]:not(:hover) ~ section[data-testid="stMain"],
 section[data-testid="stSidebar"][aria-expanded="false"] ~ section[data-testid="stMain"] {
     margin-left: 35px !important;
     width: calc(100% - 35px) !important;
+}
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+    .block-container {
+        padding-top: 1rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    section[data-testid="stSidebar"] {
+        width: 100% !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        height: auto !important;
+        z-index: 1000 !important;
+    }
+    
+    section[data-testid="stMain"] {
+        padding-bottom: 100px !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .block-container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)

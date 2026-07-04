@@ -56,6 +56,37 @@ def show_login():
         box-shadow: 0 4px 15px rgba(99,102,241,0.3) !important;
     }
     .stButton > button:hover { transform: translateY(-2px) !important; }
+    
+    /* Mobile Responsive Styles */
+    @media screen and (max-width: 768px) {
+        .block-container {
+            padding: 1rem !important;
+        }
+        .stTextInput > div > div > input {
+            padding: 12px 14px !important;
+            font-size: 14px !important;
+            height: 48px !important;
+        }
+        .stButton > button {
+            height: 48px !important;
+            font-size: 14px !important;
+        }
+    }
+    
+    @media screen and (max-width: 480px) {
+        .block-container {
+            padding: 0.75rem !important;
+        }
+        .stTextInput > div > div > input {
+            padding: 10px 12px !important;
+            font-size: 13px !important;
+            height: 44px !important;
+        }
+        .stButton > button {
+            height: 44px !important;
+            font-size: 13px !important;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
