@@ -134,7 +134,7 @@ def show_dashboard():
         <div class='app-header'>
             <div class='app-logo'>
                 <div class='app-logo-icon'>💊</div>
-                <div class='app-logo-text'>ENT-SalesPulse</div>
+                <div class='app-logo-text'>Area salesman KPI</div>
             </div>
             <div class='app-user'>👤 <b>{full_name}</b><br>{role}</div>
         </div>
