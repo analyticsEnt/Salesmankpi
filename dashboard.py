@@ -99,16 +99,18 @@ def show_dashboard():
         margin-bottom: 6px !important;
         border-bottom: 1px solid #1a1f35 !important;
     }
+    /* Home button: single-line pill, never stretched, never wrapped */
     .page-topbar-marker + div div[data-testid="stButton"] button {
         width: auto !important;
-        min-width: unset !important;
+        min-width: 90px !important;
+        white-space: nowrap !important;
         background: rgba(99,102,241,0.1) !important;
         border: 1px solid #6366f1 !important;
         border-radius: 8px !important;
         color: #a5b4fc !important;
         font-size: 12px !important;
         font-weight: 700 !important;
-        padding: 6px 12px !important;
+        padding: 6px 14px !important;
         margin-bottom: 0 !important;
     }
     .page-topbar-marker + div div[data-testid="stButton"] button:hover {
@@ -172,9 +174,9 @@ def show_dashboard():
 
     with st.container():
         st.markdown('<div class="page-topbar-marker" style="display:none;"></div>', unsafe_allow_html=True)
-        top_l, top_r = st.columns([0.15, 5])
+        top_l, top_r = st.columns([1, 8])
         with top_l:
-            if st.button("🏠 Home", key="btn_home", use_container_width=True):
+            if st.button("🏠 Home", key="btn_home"):
                 st.session_state.current_page = "menu"
                 st.rerun()
         with top_r:
