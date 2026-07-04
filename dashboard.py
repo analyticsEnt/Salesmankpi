@@ -20,13 +20,22 @@ def show_dashboard():
     div[data-testid="stMarkdownContainer"] { margin: 0 !important; }
     div[data-testid="stElementContainer"] { margin: 0 !important; }
 
+    /* Full width on desktop; only narrow it down on mobile so the
+       menu screen looks like a tidy phone-app list. */
     .block-container {
         padding-top: 1.25rem !important;
-        padding-left: 1.25rem !important;
-        padding-right: 1.25rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
         padding-bottom: 1rem !important;
-        max-width: 640px !important;
-        margin: 0 auto !important;
+        max-width: 100% !important;
+    }
+    @media screen and (max-width: 768px) {
+        .block-container {
+            max-width: 640px !important;
+            margin: 0 auto !important;
+            padding-left: 1.25rem !important;
+            padding-right: 1.25rem !important;
+        }
     }
 
     /* ─── App-style logo header (shown on both menu & page views) ─── */
@@ -80,7 +89,7 @@ def show_dashboard():
         background: linear-gradient(145deg,#1a1112,#1f1416) !important;
     }
 
-    /* ─── PAGE VIEW — sticky mini top bar with Home button ───────── */
+    /* ─── PAGE VIEW — sticky mini top bar with compact Home button ── */
     div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) {
         position: sticky !important;
         top: 0 !important;
@@ -92,14 +101,14 @@ def show_dashboard():
     }
     .page-topbar-marker + div div[data-testid="stButton"] button {
         width: auto !important;
+        min-width: unset !important;
         background: rgba(99,102,241,0.1) !important;
         border: 1px solid #6366f1 !important;
-        border-left: 1px solid #6366f1 !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         color: #a5b4fc !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
-        padding: 8px 16px !important;
+        padding: 6px 12px !important;
         margin-bottom: 0 !important;
     }
     .page-topbar-marker + div div[data-testid="stButton"] button:hover {
@@ -108,7 +117,7 @@ def show_dashboard():
     }
     .page-title-text {
         font-size: 15px; font-weight: 700; color: #f3f4f6;
-        display: flex; align-items: center; margin-top: 4px;
+        display: flex; align-items: center; margin-top: 6px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -117,12 +126,12 @@ def show_dashboard():
     role      = st.session_state.get('role', 'ASM')
 
     nav_items = [
-        ("sales",     "📊", "Sales"),
-        ("cp_sales",  "💊", "CP Sales"),
-        ("fy_sales",  "📅", "FY Sales"),
-        ("metrics",   "📈", "Sales Metrics"),
-        ("outstanding","💰","Outstanding"),
-        ("trend",     "📉", "L10D Trend"),
+        ("sales",      "📊", "Sales"),
+        ("cp_sales",   "💊", "CP Sales"),
+        ("fy_sales",   "📅", "FY Sales"),
+        ("metrics",    "📈", "Sales Metrics"),
+        ("outstanding","💰", "Outstanding"),
+        ("trend",      "📉", "L10D Trend"),
     ]
     page_titles = {k: f"{icon}  {label}" for k, icon, label in nav_items}
 
@@ -134,7 +143,7 @@ def show_dashboard():
         <div class='app-header'>
             <div class='app-logo'>
                 <div class='app-logo-icon'>💊</div>
-                <div class='app-logo-text'>Area salesman KPI</div>
+                <div class='app-logo-text'>ENT-SalesPulse</div>
             </div>
             <div class='app-user'>👤 <b>{full_name}</b><br>{role}</div>
         </div>
@@ -163,7 +172,7 @@ def show_dashboard():
 
     with st.container():
         st.markdown('<div class="page-topbar-marker" style="display:none;"></div>', unsafe_allow_html=True)
-        top_l, top_r = st.columns([1, 5])
+        top_l, top_r = st.columns([0.15, 5])
         with top_l:
             if st.button("🏠 Home", key="btn_home", use_container_width=True):
                 st.session_state.current_page = "menu"
