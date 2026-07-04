@@ -121,10 +121,29 @@ def show():
         background:linear-gradient(135deg,#0d1117,#111827);
         border:1px solid #1f2937; border-left:4px solid #6366f1;
         border-radius:14px; padding:12px 20px; margin-bottom:18px;
-        display:flex; gap:36px; align-items:center; flex-wrap:wrap;
+        display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
     .pb-label { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#6b7280; margin-bottom:2px; }
     .pb-value  { font-size:13px; font-weight:700; color:#a5b4fc; }
+
+    /* ─── Force Region+Unit onto one row, even on narrow screens ───
+       Streamlit's default column layout stacks columns full-width
+       below ~768px. This marker lets us target ONLY the Region/Unit
+       row and override it with a real 2-col grid, while the ASM
+       filter (no marker) keeps normal full-width mobile behavior. */
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stHorizontalBlock"] {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    @media screen and (max-width: 480px) {
+        .period-banner { padding: 10px 14px; gap: 10px; }
+        .pb-value { font-size: 11.5px; }
+    }
 
     /* ─── Responsive KPI grid (replaces st.columns for the cards) ───
        CSS Grid reflows on its own -- 7 across on desktop, fewer on
@@ -185,44 +204,41 @@ def show():
     with st.spinner("Loading data..."):
         df_full = load_data(role, region, unit, asm_code)
 
-    # ── Header ────────────────────────────────────────────────────
-    title_col, banner_col = st.columns([2.4, 3.6])
-    with title_col:
-        st.markdown(
-            "<div style='font-size:26px;font-weight:800;color:#f9fafb;margin-bottom:4px;'>📊 Sales Analysis</div>",
-            unsafe_allow_html=True)
-        st.markdown(
-            f"<div style='font-size:13px;color:#6b7280;margin-bottom:14px;'>"
-            f"Welcome back, {full_name} • {role} • Region: {region} • Unit: {unit}</div>",
-            unsafe_allow_html=True)
+    # Placeholder so the "Updated As On / User" banner renders ABOVE the
+    # filters visually, even though its content depends on the filtered df
+    # (computed further below, after the filter widgets run).
+    banner_placeholder = st.empty()
 
-    # ── Filters: Region / Unit / Area Sales Man (cascading) ─────────
-    filt_cols = st.columns([1.5, 1.8, 2.7])
+    # ── Region + Unit filters (forced onto one row via marker) ──────
+    with st.container():
+        st.markdown('<div class="filter-row-marker" style="display:none;"></div>', unsafe_allow_html=True)
+        filt_cols = st.columns([1, 1])
 
-    if 'Region' in df_full.columns and role == 'Admin':
-        sel_regions = filt_cols[0].multiselect(
-            "Region", sorted(df_full['Region'].dropna().unique().tolist()),
-            default=[], placeholder="All Regions", key="s_reg")
-    else:
-        sel_regions = []
+        if 'Region' in df_full.columns and role == 'Admin':
+            sel_regions = filt_cols[0].multiselect(
+                "Region", sorted(df_full['Region'].dropna().unique().tolist()),
+                default=[], placeholder="All Regions", key="s_reg")
+        else:
+            sel_regions = []
 
-    unit_pool = df_full.copy()
-    if sel_regions and 'Region' in unit_pool.columns:
-        unit_pool = unit_pool[unit_pool['Region'].isin(sel_regions)]
+        unit_pool = df_full.copy()
+        if sel_regions and 'Region' in unit_pool.columns:
+            unit_pool = unit_pool[unit_pool['Region'].isin(sel_regions)]
 
-    if 'Unit' in df_full.columns:
-        sel_units = filt_cols[1].multiselect(
-            "Unit", sorted(unit_pool['Unit'].dropna().unique().tolist()),
-            default=[], placeholder="All Units", key="s_unit")
-    else:
-        sel_units = []
+        if 'Unit' in df_full.columns:
+            sel_units = filt_cols[1].multiselect(
+                "Unit", sorted(unit_pool['Unit'].dropna().unique().tolist()),
+                default=[], placeholder="All Units", key="s_unit")
+        else:
+            sel_units = []
 
+    # ── Area Sales Man filter (own full-width row) ───────────────────
     asm_pool = unit_pool.copy()
     if sel_units and 'Unit' in asm_pool.columns:
         asm_pool = asm_pool[asm_pool['Unit'].isin(sel_units)]
 
     if 'Area_Sales_Man' in df_full.columns:
-        sel_asms = filt_cols[2].multiselect(
+        sel_asms = st.multiselect(
             "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
             default=[], placeholder="All ASMs", key="s_asm")
     else:
@@ -244,7 +260,7 @@ def show():
         updated_as_on = "N/A"
 
     user_text = f"{full_name} ({role} • {region} • {unit})"
-    banner_col.markdown(f"""
+    banner_placeholder.markdown(f"""
     <div class="period-banner" style="margin-top:6px;">
         <div><div class="pb-label">📅 Updated As On</div>
         <div class="pb-value">{updated_as_on}</div></div>
