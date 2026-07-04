@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Ent_Retail Sales Dashboard",
+    page_title="Ent Sales Man KPI",
     page_icon="💊",
     layout="wide",
     initial_sidebar_state="auto",

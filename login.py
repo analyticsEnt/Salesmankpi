@@ -102,7 +102,7 @@ def show_login():
                 Entero SalesPulse
             </div>
             <div style='font-size:12px; color:#4b5563; letter-spacing:1px; margin-bottom:36px;'>
-                PHARMA SALES INTELLIGENCE PLATFORM
+                AREA SALESMAN KPI DASHBOARD
             </div>
         </div>
         """, unsafe_allow_html=True)
