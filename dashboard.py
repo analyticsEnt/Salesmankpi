@@ -15,6 +15,11 @@ def show_dashboard():
         display: none !important;
     }
 
+    /* Hide the hidden radio navigation completely */
+    div[data-testid="stRadio"] {
+        display: none !important;
+    }
+
     /* Top Navigation Bar - Always visible */
     .top-nav-container {
         position: fixed;
@@ -287,6 +292,14 @@ def show_dashboard():
     # ══════════════════════════════════════════════════════════════
     # TOP NAVIGATION BAR
     # ══════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════
+    # TOP NAVIGATION BAR
+    # ══════════════════════════════════════════════════════════════
+    
+    # Initialize page session state
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = "📊  Sales"
+    
     col1, col2, col3 = st.columns([2, 3, 1])
     
     with col1:
@@ -305,15 +318,38 @@ def show_dashboard():
                 </div>
             </div>
             <div class='top-nav-items'>
-                <button class='top-nav-button active' onclick="document.querySelector('input[value=\\'📊  Sales\\']').click();">📊 Sales</button>
-                <button class='top-nav-button' onclick="document.querySelector('input[value=\\'💊  CP Sales\\']').click();">💊 CP Sales</button>
-                <button class='top-nav-button' onclick="document.querySelector('input[value=\\'📅  FY Sales\\']').click();">📅 FY Sales</button>
-                <button class='top-nav-button' onclick="document.querySelector('input[value=\\'📈  Sales Metrics\\']').click();">📈 Metrics</button>
-                <button class='top-nav-button' onclick="document.querySelector('input[value=\\'💰  Outstanding\\']').click();">💰 Outstanding</button>
-                <button class='top-nav-button' onclick="document.querySelector('input[value=\\'📉  L10D Trend\\']').click();">📉 L10D Trend</button>
-                <button class='top-nav-logout' id='logout_btn_top'>🚪 Logout</button>
+                <button class='top-nav-button active' id='nav-sales'>📊 Sales</button>
+                <button class='top-nav-button' id='nav-cp'>💊 CP Sales</button>
+                <button class='top-nav-button' id='nav-fy'>📅 FY Sales</button>
+                <button class='top-nav-button' id='nav-metrics'>📈 Metrics</button>
+                <button class='top-nav-button' id='nav-out'>💰 Outstanding</button>
+                <button class='top-nav-button' id='nav-trend'>📉 L10D Trend</button>
+                <button class='top-nav-logout' id='nav-logout'>🚪 Logout</button>
             </div>
         </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            // Navigation button mapping
+            const navMap = {{
+                'nav-sales': '📊  Sales',
+                'nav-cp': '💊  CP Sales',
+                'nav-fy': '📅  FY Sales',
+                'nav-metrics': '📈  Sales Metrics',
+                'nav-out': '💰  Outstanding',
+                'nav-trend': '📉  L10D Trend'
+            }};
+            
+            // Logout button
+            const logoutBtn = document.getElementById('nav-logout');
+            if (logoutBtn) {{
+                logoutBtn.addEventListener('click', function(e) {{
+                    e.preventDefault();
+                    window.location.href = window.location.pathname;
+                }});
+            }}
+        }});
+        </script>
         """.format(full_name, role), unsafe_allow_html=True)
 
     with col2:
@@ -325,24 +361,61 @@ def show_dashboard():
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
-    # HIDDEN NAVIGATION (for Streamlit page routing)
+    # PAGE SELECTION BUTTONS (Streamlit based)
     # ══════════════════════════════════════════════════════════════
-    page = st.radio("nav", [
-        "📊  Sales",
-        "💊  CP Sales",
-        "📅  FY Sales",
-        "📈  Sales Metrics",
-        "💰  Outstanding",
-        "📉  L10D Trend",
-    ], label_visibility="collapsed", key="main_nav", horizontal=True)
+    
+    # Create button columns for navigation
+    btn_col1, btn_col2, btn_col3, btn_col4, btn_col5, btn_col6, btn_col7 = st.columns(7)
+    
+    with btn_col1:
+        if st.button("📊 Sales", key="nav_sales", use_container_width=True):
+            st.session_state.current_page = "📊  Sales"
+            st.rerun()
+    
+    with btn_col2:
+        if st.button("💊 CP", key="nav_cp", use_container_width=True):
+            st.session_state.current_page = "💊  CP Sales"
+            st.rerun()
+    
+    with btn_col3:
+        if st.button("📅 FY", key="nav_fy", use_container_width=True):
+            st.session_state.current_page = "📅  FY Sales"
+            st.rerun()
+    
+    with btn_col4:
+        if st.button("📈 Metrics", key="nav_metrics", use_container_width=True):
+            st.session_state.current_page = "📈  Sales Metrics"
+            st.rerun()
+    
+    with btn_col5:
+        if st.button("💰 Out", key="nav_out", use_container_width=True):
+            st.session_state.current_page = "💰  Outstanding"
+            st.rerun()
+    
+    with btn_col6:
+        if st.button("📉 Trend", key="nav_trend", use_container_width=True):
+            st.session_state.current_page = "📉  L10D Trend"
+            st.rerun()
+    
+    with btn_col7:
+        if st.button("🚪 Logout", key="nav_logout_btn", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user = None
+            st.rerun()
 
-    # Logout button handler
-    if st.button("", key="logout_btn_hidden"):
-        st.session_state.logged_in = False
-        st.session_state.user = None
-        st.rerun()
+    # Hide the button row with CSS
+    st.markdown("""
+    <style>
+    [data-testid="column"]:has(> button) {
+        max-height: 1px;
+        overflow: hidden;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     # ── Page Routing ──────────────────────────────────────────────────────────
+    page = st.session_state.current_page
+    
     if page == "📊  Sales":
         from pages_.sales import show
         show()
