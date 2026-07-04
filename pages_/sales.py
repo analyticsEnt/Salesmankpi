@@ -125,6 +125,40 @@ def show():
     }
     .pb-label { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#6b7280; margin-bottom:2px; }
     .pb-value  { font-size:13px; font-weight:700; color:#a5b4fc; }
+
+    /* ─── Responsive KPI grid (replaces st.columns for the cards) ───
+       CSS Grid reflows on its own -- 7 across on desktop, fewer on
+       narrower screens -- instead of Streamlit's columns forcing a
+       single full-width stack below ~768px. Font sizes use clamp()
+       so text auto-shrinks/grows with the available card width. */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+    .kpi-label {
+        font-size: clamp(8px, 1.6vw, 10px);
+        font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+        color: #6b7280; margin-bottom: 4px;
+        white-space: normal; line-height: 1.25;
+    }
+    .kpi-value {
+        font-size: clamp(13px, 3.2vw, 20px);
+        font-weight: 800; color: #f9fafb; line-height: 1.1;
+    }
+    .kpi-card { padding: 10px 8px; }
+
+    @media screen and (max-width: 1100px) {
+        .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media screen and (max-width: 768px) {
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    }
+    @media screen and (max-width: 480px) {
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .kpi-card { padding: 9px 7px; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -285,12 +319,12 @@ def show():
         ("kpi-blue", "CX_Locked",           fmt_count(cx_locked)),
     ]
 
-    for row in [row1, row2, row3, row4]:
-        cols = st.columns(7)
-        for col, (cls, label, val) in zip(cols, row):
-            col.markdown(f"""
-            <div class="kpi-card {cls}">
+    all_cards = row1 + row2 + row3 + row4
+    cards_html = "".join(
+        f"""<div class="kpi-card {cls}">
                 <div class="kpi-label">{label}</div>
                 <div class="kpi-value">{val}</div>
-            </div>""", unsafe_allow_html=True)
-        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            </div>"""
+        for cls, label, val in all_cards
+    )
+    st.markdown(f'<div class="kpi-grid">{cards_html}</div>', unsafe_allow_html=True)
