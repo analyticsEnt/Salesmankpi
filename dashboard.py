@@ -192,7 +192,7 @@ def show_dashboard():
         from pages_.fy_sales import show
         show()
     elif page == "metrics":
-        from pages_.sales_metrics import show
+        from pages_.gp_leakage import show
         show()
     elif page == "outstanding":
         from pages_.outstanding import show
