@@ -128,9 +128,9 @@ def show_dashboard():
     role      = st.session_state.get('role', 'ASM')
 
     nav_items = [
-        ("sales",      "📊", "Sales"),
-        ("cp_sales",   "💊", "CP Sales"),
-        ("fy_sales",   "📅", "FY Sales"),
+        ("sales",      "📊", "Summary"),
+        ("cp_sales",   "💊", "Customer Wise"),
+        ("fy_sales",   "📅", "Insights"),
         ("metrics",    "📈", "Sales Metrics"),
         ("outstanding","💰", "Outstanding"),
         ("trend",      "📉", "L10D Trend"),
