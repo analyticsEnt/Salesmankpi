@@ -285,11 +285,13 @@ def show():
     st.markdown("<div class='sec-title'>Customer Summary</div>", unsafe_allow_html=True)
 
     rename_map = {
-        'CustCode': 'Customer Code',
+        'CustCode': 'CX Code',
         'Customer': 'Customer Name',
-        'Current_Month': 'Sales',
+        'Current_Month': 'MTD Sales',
         'Total_Outstanding': 'Total Outstanding',
         'Overdue_Value': 'Overdue',
+        'Status': 'Status',
+        'Receivables_Health': 'Receivables Health',
     }
     table_cols = [c for c in rename_map if c in df.columns]
     summary_df = df[table_cols].rename(columns=rename_map).head(500)
