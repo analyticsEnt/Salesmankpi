@@ -376,11 +376,11 @@ def show():
         fig.update_layout(
             title=title, template='plotly_dark', barmode='group',
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            height=300, margin=dict(t=36, b=10, l=10, r=10),
+            height=340, margin=dict(t=45, b=5, l=5, r=5),
             legend=dict(orientation='h', yanchor='bottom', y=1.02, font=dict(size=9)),
             xaxis=dict(title='Customers', showgrid=False),
             xaxis2=dict(title=agg_label, overlaying='x', side='top', showgrid=False),
-            font=dict(size=10, color='#9ca3af'),
+            font=dict(size=12, color='#9ca3af'),
         )
         event = st.plotly_chart(
             fig, use_container_width=True, key=chart_key,
@@ -408,9 +408,9 @@ def show():
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             legend=dict(orientation='h', yanchor='top', y=-0.05, font=dict(size=9)),
-            margin=dict(t=36, b=10, l=10, r=10), height=300,
+            margin=dict(t=45, b=5, l=5, r=5), height=340,
             title=dict(font=dict(size=13, color='#e5e7eb')),
-            font=dict(size=10, color='#9ca3af'),
+            font=dict(size=12, color='#9ca3af'),
         )
         event = st.plotly_chart(
             fig, use_container_width=True, key=chart_key,
@@ -421,21 +421,31 @@ def show():
             clicked_val = vc.iloc[idx][cat_col]
             st.session_state.drill_filter = (cat_col, clicked_val)
 
-    ins_row1 = st.columns(3)
-    with ins_row1[0]:
+    st.markdown("""
+    <style>
+    @media (max-width: 768px){
+        div[data-testid="stHorizontalBlock"]{
+            flex-direction:column !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    row1 = st.columns(3)
+    with row1[0]:
         clickable_bar(df, 'Customer_Type', 'Current_Month', 'MTD Sales',
                       'Customer Type', '#6366f1', 'chart_custtype')
-    with ins_row1[1]:
+    with row1[1]:
         clickable_bar(df, 'Mis_Remarks', 'Sales_Deficit', 'MTD Deficit',
                       'MIS Remarks', '#ef4444', 'chart_mis')
-    with ins_row1[2]:
+    with row1[2]:
         clickable_donut(df, 'Status', 'Status', 'chart_status')
 
-    ins_row2 = st.columns(2)
-    with ins_row2[0]:
+    row2 = st.columns(2)
+    with row2[0]:
         clickable_bar(df, 'Reason', 'Current_Month', 'MTD Sales',
                       'Reason', '#10b981', 'chart_reason')
-    with ins_row2[1]:
+    with row2[1]:
         clickable_bar(df, 'Receivables_Health', 'Total_Outstanding', 'Total Outstanding',
                       'Receivables Health', '#f97316', 'chart_recv')
 
