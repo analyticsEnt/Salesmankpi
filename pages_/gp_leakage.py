@@ -79,6 +79,13 @@ def show():
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-2) [data-testid="stHorizontalBlock"] {
         grid-template-columns: 1fr 1fr !important;
     }
+    /* Mobile: Region/Unit/ASM drops from 3-across to 2-per-row --
+       the 3rd item (ASM) simply wraps onto its own line below. */
+    @media screen and (max-width: 768px) {
+        div[data-testid="stVerticalBlock"]:has(> div .filter-row-3) [data-testid="stHorizontalBlock"] {
+            grid-template-columns: 1fr 1fr !important;
+        }
+    }
 
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
