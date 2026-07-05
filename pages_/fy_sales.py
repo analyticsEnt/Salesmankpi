@@ -56,7 +56,7 @@ def show():
         gap: 10px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
-        width: auto !important;
+        width: 100% !important;
         min-width: 0 !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-3) [data-testid="stHorizontalBlock"] {
@@ -80,7 +80,7 @@ def show():
         gap: 14px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .chart-row-marker) [data-testid="stColumn"] {
-        width: auto !important;
+        width: 100% !important;
         min-width: 0 !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .chart-row-3) [data-testid="stHorizontalBlock"] {
@@ -278,3 +278,22 @@ def show():
         with ins_row2[1]:
             bar_chart(df, 'Receivables_Health', 'Total_Outstanding', 'Total Outstanding',
                       'Receivables Health', '#f97316', 'chart_recv')
+
+    # ══════════════════════════════════════════════════════════════
+    # SMALL CUSTOMER SUMMARY TABLE
+    # ══════════════════════════════════════════════════════════════
+    st.markdown("<div class='sec-title'>Customer Summary</div>", unsafe_allow_html=True)
+
+    rename_map = {
+        'CustCode': 'Customer Code',
+        'Customer': 'Customer Name',
+        'Current_Month': 'Sales',
+        'Total_Outstanding': 'Total Outstanding',
+        'Overdue_Value': 'Overdue',
+    }
+    table_cols = [c for c in rename_map if c in df.columns]
+    summary_df = df[table_cols].rename(columns=rename_map).head(500)
+
+    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+    if len(df) > 500:
+        st.caption(f"Showing first 500 of {len(df):,} matching rows.")
