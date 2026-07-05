@@ -343,7 +343,7 @@ def show():
     # and would still cap what's shown; typing to search covers all
     # of them instantly).
     # ══════════════════════════════════════════════════════════════
-    title_col, search_col = st.columns([2, 2])
+    title_col, search_col, dropdown_col = st.columns([2, 2, 2])
     with title_col:
         st.markdown("<div class='sec-title'>Customer Details</div>", unsafe_allow_html=True)
     with search_col:
@@ -351,10 +351,18 @@ def show():
             "Search Customer", value="", placeholder="Type customer name to search...",
             key="cw_cust_search", label_visibility="collapsed",
         )
+    with dropdown_col:
+        sel_customers = st.multiselect(
+            "Customer", sorted(df['Customer'].dropna().unique().tolist()),
+            default=[], placeholder="All Customers", key="cw_cust_dropdown",
+            label_visibility="collapsed",
+        ) if 'Customer' in df.columns else []
 
     table_df = df.copy()
     if cust_search and 'Customer' in table_df.columns:
         table_df = table_df[table_df['Customer'].str.contains(cust_search, case=False, na=False)]
+    if sel_customers and 'Customer' in table_df.columns:
+        table_df = table_df[table_df['Customer'].isin(sel_customers)]
 
     display_cols = [c for c in [
         'LPD', 'CustCode', 'Customer', 'Customer_Type', 'Mis_Remarks',
