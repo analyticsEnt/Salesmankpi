@@ -178,7 +178,7 @@ def show():
     # ── Region + Unit + ASM filters (forced onto one row) ───────────
     with st.container():
         st.markdown('<div class="filter-row-marker filter-row-3" style="display:none;"></div>', unsafe_allow_html=True)
-        f1 = st.columns([1, 1, 1])
+        f1 = st.columns([1, 1, 1, 1])
 
         if 'Region' in df_full.columns and role == 'Admin':
             sel_regions = f1[0].multiselect(
@@ -209,6 +209,18 @@ def show():
         else:
             sel_asms = []
 
+
+        asm_pool = unit_pool.copy()
+        if sel_units and 'Unit' in asm_pool.columns:
+            asm_pool = asm_pool[asm_pool['Unit'].isin(sel_units)]
+
+        if 'Area_Sales_Man' in df_full.columns:
+            sel_asms = f1[3].multiselect(
+                "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
+                default=[], placeholder="All ASMs", key="cw_asm")
+        else:
+            sel_asms = []
+
     # ── Customer_Type / Mis_Remarks / Reason / Receivables_Health ───
     detail_pool = asm_pool.copy()
     if sel_asms and 'Area_Sales_Man' in detail_pool.columns:
@@ -234,9 +246,6 @@ def show():
             "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
             default=[], placeholder="Receivables H...", key="cw_recv") if 'Receivables_Health' in detail_pool.columns else []
         
-        sel_recv = f2[4].multiselect(
-            "Customer Name", sorted(detail_pool['Customer'].dropna().unique().tolist()),
-            default=[], placeholder="Customer Name", key="cw_recv") if 'Customer' in detail_pool.columns else []
 
     # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
