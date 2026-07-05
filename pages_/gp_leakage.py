@@ -91,6 +91,18 @@ def show():
         font-size: 15px; font-weight: 800; color: #f3f4f6;
         margin: 18px 0 10px 0; padding: 0;
     }
+
+    /* ─── Consistent filter label/value font sizes across all pages ──
+       Explicit sizes (rather than relying on default theme sizing)
+       so Region/Unit/ASM/etc. render identically here and on
+       cp_sales.py / customer_wise.py regardless of column width. */
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
+        font-size: 13px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
