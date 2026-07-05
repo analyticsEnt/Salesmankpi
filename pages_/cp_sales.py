@@ -104,60 +104,64 @@ def show():
         }
     }
 
-    /* ─── Section title, zero margin so it sits flush on the table ── */
+    /* ─── Section title ──────────────────────────────────────────── */
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
-        margin: 18px 0 0 0; padding: 0;
+        margin: 18px 0 10px 0; padding: 0;
     }
 
-    /* ─── Summary tables (matches the sample screenshot structure) ── */
-    .summary-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 0 0 4px 0;
-        table-layout: fixed;
-        font-size: 12.5px;
+    /* ─── Responsive KPI grid (same pattern as the Sales page) ─────
+       CSS Grid reflows on its own -- 7 across on desktop, fewer on
+       narrower screens -- instead of a wide HTML table that can't
+       reflow at all on mobile. Font sizes use clamp() so text
+       auto-shrinks/grows with the available card width. */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-bottom: 8px;
     }
-    .summary-table td {
-        border: 1px solid #1f2937;
-        padding: 8px 6px;
-        text-align: center;
-        vertical-align: middle;
-        color: #e5e7eb;
-        word-wrap: break-word;
+    .kpi-card {
+        background:linear-gradient(145deg,#0d1117,#111827);
+        border:1px solid #1f2937; border-radius:12px;
+        padding:10px 8px; position:relative; overflow:hidden;
+        transition:transform 0.2s,box-shadow 0.2s;
     }
-    .summary-table .title-cell {
-        color: #ffffff;
-        font-weight: 800;
-        font-size: 13px;
-        line-height: 1.3;
+    .kpi-card::before {
+        content:''; position:absolute; top:0; left:0;
+        width:4px; height:100%;
+        background:var(--accent, linear-gradient(180deg,#6366f1,#8b5cf6));
     }
-    .summary-table .col-header {
-        font-weight: 700;
-        font-size: 10.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
+    .kpi-card:hover { transform:translateY(-3px); box-shadow:0 12px 30px rgba(99,102,241,0.15); }
+    .kpi-label {
+        font-size: clamp(8px, 1.6vw, 10px);
+        font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+        color: #6b7280; margin-bottom: 4px; line-height: 1.25;
+        overflow-wrap: normal; word-break: keep-all; hyphens: none;
     }
-    .summary-table .col-value {
-        font-weight: 800;
-        font-size: 15px;
+    .kpi-value {
+        font-size: clamp(13px, 3.2vw, 19px);
+        font-weight: 800; color: #f9fafb; line-height: 1.1;
     }
-    .summary-table.orange .title-cell { background: #b45309; }
-    .summary-table.orange .col-header { background: rgba(217,119,6,0.15); color: #fbbf24; }
-    .summary-table.orange .col-value  { background: rgba(217,119,6,0.05); }
-    .summary-table.orange .highlight { color: #f87171; }
+    .kpi-orange { --accent: linear-gradient(180deg,#f59e0b,#d97706); }
+    .kpi-orange .kpi-value { color:#fbbf24; }
+    .kpi-green  { --accent: linear-gradient(180deg,#10b981,#059669); }
+    .kpi-green  .kpi-value { color:#34d399; }
+    .kpi-highlight .kpi-value { color:#f87171 !important; }
 
-    .summary-table.green .title-cell { background: #047857; }
-    .summary-table.green .col-header { background: rgba(16,185,129,0.15); color: #34d399; }
-    .summary-table.green .col-value  { background: rgba(16,185,129,0.05); }
-    .summary-table.green .highlight  { color: #f87171; }
-
+    @media screen and (max-width: 1100px) {
+        .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
     @media screen and (max-width: 768px) {
-        .summary-table { font-size: 10px; }
-        .summary-table td { padding: 6px 3px; }
-        .summary-table .title-cell { font-size: 11px; }
-        .summary-table .col-header { font-size: 8.5px; }
-        .summary-table .col-value { font-size: 12px; }
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+        .kpi-card { padding: 8px 6px; }
+    }
+    @media screen and (max-width: 480px) {
+        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .kpi-card { padding: 7px 5px; border-radius: 9px; }
+        .kpi-card::before { width: 3px; }
+        .kpi-label { font-size: clamp(6.5px, 2.1vw, 8px); margin-bottom: 2px; }
+        .kpi-value { font-size: clamp(11px, 3.6vw, 15px); }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -271,35 +275,26 @@ def show():
     sales_shortfall = df.loc[shortfall_mask, 'Sales_Deficit'].sum() if 'Sales_Deficit' in df.columns else 0
 
     st.markdown("<div class='sec-title'>Customer Trends &amp; Business Impact</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <table class="summary-table orange">
-        <tr>
-            <td rowspan="2" class="title-cell" style="width:11%;">Customer Trends<br>&amp; Business Impact</td>
-            <td class="col-header">Total Customers</td>
-            <td class="col-header">Customers Ordered</td>
-            <td class="col-header">Ordered %</td>
-            <td class="col-header">CHURN This Month</td>
-            <td class="col-header">% CMR Churn this Month</td>
-            <td class="col-header">CHUN &gt; 1 month</td>
-            <td class="col-header">% CHUN &gt; 1 month</td>
-            <td class="col-header">Degrown Customers</td>
-            <td class="col-header">Degrown%</td>
-            <td class="col-header">Short fall of Sales</td>
-        </tr>
-        <tr>
-            <td class="col-value">{fmt_count(total_customers)}</td>
-            <td class="col-value">{fmt_count(customers_ordered)}</td>
-            <td class="col-value">{fmt_pct(ordered_pct)}</td>
-            <td class="col-value">{fmt_count(churn_this_month)}</td>
-            <td class="col-value">{fmt_pct(churn_this_month_pct)}</td>
-            <td class="col-value">{fmt_count(churn_gt1_month)}</td>
-            <td class="col-value">{fmt_pct(churn_gt1_month_pct)}</td>
-            <td class="col-value">{fmt_count(degrowth_customers)}</td>
-            <td class="col-value">{fmt_pct(degrowth_pct)}</td>
-            <td class="col-value highlight">{fmt_inr(sales_shortfall)}</td>
-        </tr>
-    </table>
-    """, unsafe_allow_html=True)
+    section1_cards = [
+        ("", "Total CX",           fmt_count(total_customers)),
+        ("", "Ordered CX",         fmt_count(customers_ordered)),
+        ("", "Ordered %",          fmt_pct(ordered_pct)),
+        ("", "Churn (MTD)",        fmt_count(churn_this_month)),
+        ("", "Churn MTD %",        fmt_pct(churn_this_month_pct)),
+        ("", "Churn &gt;1M",       fmt_count(churn_gt1_month)),
+        ("", "Churn &gt;1M %",     fmt_pct(churn_gt1_month_pct)),
+        ("", "Degrowth CX",        fmt_count(degrowth_customers)),
+        ("", "Degrowth %",         fmt_pct(degrowth_pct)),
+        ("kpi-highlight", "Sales Shortfall", fmt_inr(sales_shortfall)),
+    ]
+    cards_html_1 = "".join(
+        f"""<div class="kpi-card kpi-orange {extra}">
+                <div class="kpi-label">{label}</div>
+                <div class="kpi-value">{val}</div>
+            </div>"""
+        for extra, label, val in section1_cards
+    )
+    st.markdown(f'<div class="kpi-grid">{cards_html_1}</div>', unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
     # SECTION 2 — Outstanding
@@ -320,32 +315,23 @@ def show():
     os_0_30_pct = safe_pct(os_0_30, total_outstanding)
 
     st.markdown("<div class='sec-title'>Outstanding</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <table class="summary-table green">
-        <tr>
-            <td rowspan="2" class="title-cell" style="width:11%;">Outstanding</td>
-            <td class="col-header">#customers with &gt;90 Days</td>
-            <td class="col-header">OS Value &gt;90 Days</td>
-            <td class="col-header">%</td>
-            <td class="col-header">OS Value 60-90 Days</td>
-            <td class="col-header">%</td>
-            <td class="col-header">OS Value 30-60 Days</td>
-            <td class="col-header">%</td>
-            <td class="col-header">OS Value 0-30 Days</td>
-            <td class="col-header">%</td>
-            <td class="col-header">Total Outstanding</td>
-        </tr>
-        <tr>
-            <td class="col-value">{fmt_count(cx_gt90)}</td>
-            <td class="col-value highlight">{fmt_inr(os_gt90)}</td>
-            <td class="col-value">{fmt_pct(os_gt90_pct)}</td>
-            <td class="col-value highlight">{fmt_inr(os_60_90)}</td>
-            <td class="col-value">{fmt_pct(os_60_90_pct)}</td>
-            <td class="col-value">{fmt_inr(os_30_60)}</td>
-            <td class="col-value">{fmt_pct(os_30_60_pct)}</td>
-            <td class="col-value">{fmt_inr(os_0_30)}</td>
-            <td class="col-value">{fmt_pct(os_0_30_pct)}</td>
-            <td class="col-value">{fmt_inr(total_outstanding)}</td>
-        </tr>
-    </table>
-    """, unsafe_allow_html=True)
+    section2_cards = [
+        ("", "CX &gt;90D",           fmt_count(cx_gt90)),
+        ("kpi-highlight", "OS &gt;90D", fmt_inr(os_gt90)),
+        ("", "%",                    fmt_pct(os_gt90_pct)),
+        ("kpi-highlight", "OS 60-90D", fmt_inr(os_60_90)),
+        ("", "%",                    fmt_pct(os_60_90_pct)),
+        ("", "OS 30-60D",            fmt_inr(os_30_60)),
+        ("", "%",                    fmt_pct(os_30_60_pct)),
+        ("", "OS 0-30D",             fmt_inr(os_0_30)),
+        ("", "%",                    fmt_pct(os_0_30_pct)),
+        ("", "Total O/S",            fmt_inr(total_outstanding)),
+    ]
+    cards_html_2 = "".join(
+        f"""<div class="kpi-card kpi-green {extra}">
+                <div class="kpi-label">{label}</div>
+                <div class="kpi-value">{val}</div>
+            </div>"""
+        for extra, label, val in section2_cards
+    )
+    st.markdown(f'<div class="kpi-grid">{cards_html_2}</div>', unsafe_allow_html=True)
