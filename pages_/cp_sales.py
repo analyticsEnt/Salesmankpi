@@ -1,11 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
-
-COLORS = px.colors.qualitative.Vivid
 
 @st.cache_resource
 def get_engine():
@@ -341,135 +337,11 @@ def show():
     st.markdown(f'<div class="kpi-grid">{cards_html_2}</div>', unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
-    # CUSTOMER INSIGHTS — mixed chart types, click a bar/slice to
-    # filter the customer table further down. Requires Streamlit
-    # >=1.35 for the on_select plotly event API.
-    # ══════════════════════════════════════════════════════════════
-    st.markdown("<div class='sec-title'>Customer Insights</div>", unsafe_allow_html=True)
-
-    if 'drill_filter' not in st.session_state:
-        st.session_state.drill_filter = None  # (column_name, value)
-
-    def clickable_bar(data, cat_col, value_col, agg_label, title, bar_color, chart_key):
-        """Horizontal bar: Count of customers + a monetary metric (MTD Sales
-        or MTD Deficit), side by side on a secondary x-axis. Clicking a bar
-        sets the page-wide drill filter used by the table below."""
-        if cat_col not in data.columns:
-            return
-        grp = data.groupby(cat_col, as_index=False).agg(
-            Count=('CustCode', 'count'),
-            Value=(value_col, 'sum'),
-        ).sort_values('Value', ascending=True)
-        if grp.empty:
-            return
-
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            y=grp[cat_col], x=grp['Count'], name='Customers',
-            orientation='h', marker_color=bar_color, opacity=0.9,
-        ))
-        fig.add_trace(go.Bar(
-            y=grp[cat_col], x=grp['Value'], name=agg_label,
-            orientation='h', marker_color='#f59e0b', opacity=0.55,
-            xaxis='x2',
-        ))
-        fig.update_layout(
-            title=title, template='plotly_dark', barmode='group',
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            height=340, margin=dict(t=45, b=5, l=5, r=5),
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, font=dict(size=9)),
-            xaxis=dict(title='Customers', showgrid=False),
-            xaxis2=dict(title=agg_label, overlaying='x', side='top', showgrid=False),
-            font=dict(size=12, color='#9ca3af'),
-        )
-        event = st.plotly_chart(
-            fig, use_container_width=True, key=chart_key,
-            on_select="rerun", selection_mode="points",
-        )
-        if event and event.selection and event.selection.points:
-            idx = event.selection.points[0]['point_index']
-            clicked_val = grp.iloc[idx][cat_col]
-            st.session_state.drill_filter = (cat_col, clicked_val)
-
-    def clickable_donut(data, cat_col, title, chart_key):
-        """A single clean, formal donut — used only for Status (2 simple
-        states), keeping the rest of the row as data-rich bar charts."""
-        if cat_col not in data.columns:
-            return
-        vc = data[cat_col].dropna().value_counts().reset_index()
-        vc.columns = [cat_col, 'Count']
-        if vc.empty:
-            return
-        fig = px.pie(
-            vc, names=cat_col, values='Count', title=title, hole=0.55,
-            color_discrete_sequence=COLORS, template='plotly_dark',
-        )
-        fig.update_traces(textposition='inside', textinfo='percent')
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            legend=dict(orientation='h', yanchor='top', y=-0.05, font=dict(size=9)),
-            margin=dict(t=45, b=5, l=5, r=5), height=340,
-            title=dict(font=dict(size=13, color='#e5e7eb')),
-            font=dict(size=12, color='#9ca3af'),
-        )
-        event = st.plotly_chart(
-            fig, use_container_width=True, key=chart_key,
-            on_select="rerun", selection_mode="points",
-        )
-        if event and event.selection and event.selection.points:
-            idx = event.selection.points[0]['point_index']
-            clicked_val = vc.iloc[idx][cat_col]
-            st.session_state.drill_filter = (cat_col, clicked_val)
-
-    st.markdown("""
-    <style>
-    @media (max-width: 768px){
-        div[data-testid="stHorizontalBlock"]{
-            flex-direction:column !important;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    row1 = st.columns(3)
-    with row1[0]:
-        clickable_bar(df, 'Customer_Type', 'Current_Month', 'MTD Sales',
-                      'Customer Type', '#6366f1', 'chart_custtype')
-    with row1[1]:
-        clickable_bar(df, 'Mis_Remarks', 'Sales_Deficit', 'MTD Deficit',
-                      'MIS Remarks', '#ef4444', 'chart_mis')
-    with row1[2]:
-        clickable_donut(df, 'Status', 'Status', 'chart_status')
-
-    row2 = st.columns(2)
-    with row2[0]:
-        clickable_bar(df, 'Reason', 'Current_Month', 'MTD Sales',
-                      'Reason', '#10b981', 'chart_reason')
-    with row2[1]:
-        clickable_bar(df, 'Receivables_Health', 'Total_Outstanding', 'Total Outstanding',
-                      'Receivables Health', '#f97316', 'chart_recv')
-
-    # ══════════════════════════════════════════════════════════════
-    # CUSTOMER DETAIL TABLE — filtered by whichever bar/slice was
-    # clicked above (e.g. click "Critical" in Receivables Health).
+    # CUSTOMER DETAIL TABLE
     # ══════════════════════════════════════════════════════════════
     st.markdown("<div class='sec-title'>Customer Details</div>", unsafe_allow_html=True)
 
     table_df = df.copy()
-    if st.session_state.drill_filter:
-        drill_col, drill_val = st.session_state.drill_filter
-        if drill_col in table_df.columns:
-            table_df = table_df[table_df[drill_col] == drill_val]
-            cclear1, cclear2 = st.columns([5, 1])
-            with cclear1:
-                st.markdown(
-                    f"<div style='font-size:12px;color:#a5b4fc;margin-bottom:6px;'>"
-                    f"Filtered by <b>{drill_col} = {drill_val}</b> — click a chart again to change it.</div>",
-                    unsafe_allow_html=True)
-            with cclear2:
-                if st.button("Clear filter", key="clear_drill"):
-                    st.session_state.drill_filter = None
-                    st.rerun()
 
     display_cols = [c for c in [
         'CustCode', 'Customer', 'Customer_Type', 'Mis_Remarks', 'Status',
