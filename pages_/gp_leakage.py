@@ -97,11 +97,11 @@ def show():
        so Region/Unit/ASM/etc. render identically here and on
        cp_sales.py / customer_wise.py regardless of column width. */
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
-        font-size: 14px !important;
+        font-size: 10px !important;
         font-weight: 600 !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
-        font-size: 13px !important;
+        font-size: 12px !important;
     }
     </style>
     """, unsafe_allow_html=True)
