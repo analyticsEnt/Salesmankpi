@@ -1,42 +1,34 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
-import io
 
 @st.cache_resource
 def get_engine():
-    host     = "db31521.public.databaseasp.net"
+    host     = "db34081.public.databaseasp.net"
     port     = 3306
-    database = "db31521"
-    username = "db31521"
+    database = "db34081"
+    username = "db34081"
     password = quote_plus(st.secrets["DB_PASSWORD"])
     return create_engine(
         f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}",
         pool_pre_ping=True, pool_recycle=3600,
     )
 
+NUMERIC_COLS = [
+    'Current_Month', 'Sales_Deficit', 'Total_Outstanding', 'Overdue_Value',
+    '30_Days', '31_to_60', '61_to_90', 'G90',
+]
+
 @st.cache_data(ttl=300, show_spinner=False)
 def load_data(role, region, unit, asm_code):
     engine = get_engine()
-    df = pd.read_sql_table("cp_sales", engine)
-    for col in ['Net_Cost','Net_Discount','Net_Sale','Net_Scheme']:
+    df = pd.read_sql_table("customer_wise", engine)
+
+    for col in NUMERIC_COLS:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-    if 'Date' in df.columns:
-        df['Date']  = pd.to_datetime(df['Date'], errors='coerce')
-        df['Month'] = df['Date'].dt.to_period('M').astype(str)
-        df['Year']  = df['Date'].dt.year.astype(str)
-    if 'Customer_Type' in df.columns:
-        mapping = {
-            'WHOLE SELLER': 'WHOLESELLER',
-            'E-COMMERCE': 'E-COM',
-            'ENTERO GROUP': 'ENT_GROUP',
-            'THERYCO': 'THERYCO'
-        }
-        df['CX_Group'] = df['Customer_Type'].map(mapping).fillna('TRADE')
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
     if role != 'Admin':
         if region != 'ALL' and 'Region' in df.columns:
             df = df[df['Region'] == region]
@@ -44,84 +36,128 @@ def load_data(role, region, unit, asm_code):
             df = df[df['Unit'] == unit]
         if asm_code != 'ALL' and 'ASM_Code' in df.columns:
             df = df[df['ASM_Code'] == asm_code]
+
     return df
 
-def fmt(n):
-    if abs(n) >= 1_000_000_000: return f"₹{n/1_000_000_000:.2f}B"
-    if abs(n) >= 1_000_000:     return f"₹{n/1_000_000:.2f}M"
-    if abs(n) >= 1_000:         return f"₹{n/1_000:.2f}K"
-    return f"₹{n:.0f}"
 
-COLORS = px.colors.qualitative.Vivid
+def fmt_inr(n):
+    """Rupee amount using Indian digit grouping (lakh/crore style),
+    e.g. 3789468 -> ₹37,89,468 -- matches the sample screenshot exactly."""
+    if pd.isna(n):
+        n = 0
+    n = int(round(n))
+    neg = n < 0
+    n = abs(n)
+    s = str(n)
+    if len(s) <= 3:
+        grouped = s
+    else:
+        last3 = s[-3:]
+        rest = s[:-3]
+        parts = []
+        while len(rest) > 2:
+            parts.insert(0, rest[-2:])
+            rest = rest[:-2]
+        if rest:
+            parts.insert(0, rest)
+        grouped = ",".join(parts) + "," + last3
+    return ("-" if neg else "") + "₹" + grouped
+
+def fmt_count(n):
+    if pd.isna(n):
+        return "0"
+    return f"{int(n):,}"
+
+def fmt_pct(n):
+    if pd.isna(n):
+        return "0%"
+    return f"{round(n)}%"
+
+def safe_pct(numer, denom):
+    return (numer / denom * 100) if denom else 0.0
+
 
 def show():
     st.markdown("""
     <style>
-    .kpi-card {
-        background:linear-gradient(145deg,#0d1117,#111827);
-        border:1px solid #1f2937; border-radius:18px;
-        padding:20px; position:relative; overflow:hidden;
-        transition:transform 0.2s,box-shadow 0.2s;
+    /* ─── Force filter rows onto one line even on mobile ──────────
+       Same marker + :has() technique used on the Sales page: targets
+       ONLY the wrapped filter row, overriding Streamlit's default
+       column-stacking behavior below ~768px. */
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stHorizontalBlock"] {
+        display: grid !important;
+        gap: 10px !important;
     }
-    .kpi-card::before {
-        content:''; position:absolute; top:0; left:0;
-        width:4px; height:100%;
-        background:linear-gradient(180deg,#6366f1,#8b5cf6);
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
+        width: auto !important;
+        min-width: 0 !important;
     }
-    .kpi-card:hover { transform:translateY(-3px); box-shadow:0 12px 30px rgba(99,102,241,0.15); }
-    .kpi-icon  { font-size:18px; margin-bottom:6px; }
-    .kpi-label { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:#6b7280; margin-bottom:4px; }
-    .kpi-value { font-size:22px; font-weight:800; color:#f9fafb; }
-    .kpi-sub   { font-size:11px; color:#10b981; margin-top:3px; }
-    .period-banner {
-        background:linear-gradient(135deg,#0d1117,#111827);
-        border:1px solid #1f2937; border-left:4px solid #6366f1;
-        border-radius:14px; padding:12px 20px; margin-bottom:18px;
-        display:flex; gap:36px; align-items:center; flex-wrap:wrap;
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-3) [data-testid="stHorizontalBlock"] {
+        grid-template-columns: 1fr 1fr 1fr !important;
     }
-    .pb-label { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#6b7280; margin-bottom:2px; }
-    .pb-value  { font-size:13px; font-weight:700; color:#a5b4fc; }
-    .sec-header {
-        font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-        color:#6366f1; margin:22px 0 10px; padding-bottom:8px; border-bottom:1px solid #1a1f35;
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-4) [data-testid="stHorizontalBlock"] {
+        grid-template-columns: 1fr 1fr !important;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        background:#0d1117 !important; border-radius:12px !important;
-        padding:5px !important; border:1px solid #1f2937 !important; gap:3px !important;
+    @media screen and (min-width: 900px) {
+        div[data-testid="stVerticalBlock"]:has(> div .filter-row-4) [data-testid="stHorizontalBlock"] {
+            grid-template-columns: 1fr 1fr 1fr 1fr !important;
+        }
     }
-    .stTabs [data-baseweb="tab"] {
-        background:transparent !important; border-radius:9px !important;
-        color:#6b7280 !important; font-weight:600 !important;
-        font-size:13px !important; padding:9px 16px !important; border:none !important;
+
+    /* ─── Section title, zero margin so it sits flush on the table ── */
+    .sec-title {
+        font-size: 15px; font-weight: 800; color: #f3f4f6;
+        margin: 18px 0 0 0; padding: 0;
     }
-    .stTabs [aria-selected="true"] {
-        background:linear-gradient(135deg,#6366f1,#8b5cf6) !important;
-        color:white !important; box-shadow:0 4px 12px rgba(99,102,241,0.3) !important;
+
+    /* ─── Summary tables (matches the sample screenshot structure) ── */
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 4px 0;
+        table-layout: fixed;
+        font-size: 12.5px;
     }
-    .stTabs [data-baseweb="tab-highlight"],
-    .stTabs [data-baseweb="tab-border"] { display:none !important; }
-    div[role="radiogroup"], [data-baseweb="radio-group"] > div {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        gap: 0.75rem !important;
-        align-items: center !important;
+    .summary-table td {
+        border: 1px solid #1f2937;
+        padding: 8px 6px;
+        text-align: center;
+        vertical-align: middle;
+        color: #e5e7eb;
+        word-wrap: break-word;
     }
-    div[role="radiogroup"] > label,
-    div[role="radiogroup"] > div {
-        display: inline-flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        margin-bottom: 0 !important;
+    .summary-table .title-cell {
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 13px;
+        line-height: 1.3;
     }
-    div[role="radiogroup"] > label > div,
-    div[role="radiogroup"] > label > div > div {
-        display: inline-flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
+    .summary-table .col-header {
+        font-weight: 700;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
-    div[role="radiogroup"] input[type="radio"] {
-        margin-right: 0.5rem !important;
+    .summary-table .col-value {
+        font-weight: 800;
+        font-size: 15px;
+    }
+    .summary-table.orange .title-cell { background: #b45309; }
+    .summary-table.orange .col-header { background: rgba(217,119,6,0.15); color: #fbbf24; }
+    .summary-table.orange .col-value  { background: rgba(217,119,6,0.05); }
+    .summary-table.orange .highlight { color: #f87171; }
+
+    .summary-table.green .title-cell { background: #047857; }
+    .summary-table.green .col-header { background: rgba(16,185,129,0.15); color: #34d399; }
+    .summary-table.green .col-value  { background: rgba(16,185,129,0.05); }
+    .summary-table.green .highlight  { color: #f87171; }
+
+    @media screen and (max-width: 768px) {
+        .summary-table { font-size: 10px; }
+        .summary-table td { padding: 6px 3px; }
+        .summary-table .title-cell { font-size: 11px; }
+        .summary-table .col-header { font-size: 8.5px; }
+        .summary-table .col-value { font-size: 12px; }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -135,279 +171,181 @@ def show():
     with st.spinner("Loading data..."):
         df_full = load_data(role, region, unit, asm_code)
 
-    # Page title + period/user card with date filters on the same row
-    title_col, banner_col, from_col, to_col = st.columns([2.4, 2.6, 1, 1])
-    with title_col:
-        st.markdown("<div style='font-size:26px;font-weight:800;color:#f9fafb;margin-bottom:4px;'>💊 CP Sales</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:13px;color:#6b7280;margin-bottom:14px;'>Welcome back, {full_name} • {role} • Region: {region} • Unit: {unit}</div>", unsafe_allow_html=True)
+    # ── Region + Unit + ASM filters (forced onto one row) ───────────
+    with st.container():
+        st.markdown('<div class="filter-row-marker filter-row-3" style="display:none;"></div>', unsafe_allow_html=True)
+        f1 = st.columns([1, 1, 1])
 
-    # ── Header Filters ───────────────────────────────────────────────────────
-    if 'Date' in df_full.columns:
-        min_d = df_full['Date'].min().date()
-        max_d = df_full['Date'].max().date()
-        from_date = from_col.date_input("From Date", value=min_d, min_value=min_d, max_value=max_d, key="s_from")
-        to_date   = to_col.date_input("To Date",   value=max_d, min_value=min_d, max_value=max_d, key="s_to")
-    else:
-        from_date = to_date = None
+        if 'Region' in df_full.columns and role == 'Admin':
+            sel_regions = f1[0].multiselect(
+                "Region", sorted(df_full['Region'].dropna().unique().tolist()),
+                default=[], placeholder="All Regions", key="cw_reg")
+        else:
+            sel_regions = []
 
-    # Region/Unit/CX Group/Customer Type filters on the next row
-    region_unit_cols = st.columns([1.5, 1.8, 3.8, 1.8])
+        unit_pool = df_full.copy()
+        if sel_regions and 'Region' in unit_pool.columns:
+            unit_pool = unit_pool[unit_pool['Region'].isin(sel_regions)]
 
-    if 'Region' in df_full.columns and role == 'Admin':
-        sel_regions = region_unit_cols[0].multiselect("Region",
-                                                     df_full['Region'].dropna().unique().tolist(),
-                                                     default=[],
-                                                     key="s_reg")
-    else:
-        sel_regions = []
+        if 'Unit' in df_full.columns:
+            sel_units = f1[1].multiselect(
+                "Unit", sorted(unit_pool['Unit'].dropna().unique().tolist()),
+                default=[], placeholder="All Units", key="cw_unit")
+        else:
+            sel_units = []
 
-    if 'Unit' in df_full.columns:
-        unit_options = df_full['Unit'].dropna().unique().tolist()
-        if sel_regions and 'Region' in df_full.columns:
-            unit_options = df_full[df_full['Region'].isin(sel_regions)]['Unit'].dropna().unique().tolist()
-        sel_units = region_unit_cols[1].multiselect("Unit",
-                                                   sorted(unit_options),
-                                                   default=[],
-                                                   placeholder="All Units",
-                                                   key="s_unit")
-    else:
-        sel_units = []
+        asm_pool = unit_pool.copy()
+        if sel_units and 'Unit' in asm_pool.columns:
+            asm_pool = asm_pool[asm_pool['Unit'].isin(sel_units)]
 
-    if 'CX_Group' in df_full.columns:
-        cx_options = df_full['CX_Group'].dropna().unique().tolist()
-        default_cx = [x for x in cx_options if x in ['TRADE', 'E-COM', 'WHOLESELLER']]
-        sel_cx_group = region_unit_cols[2].multiselect("CX Group",
-                                                      sorted(cx_options),
-                                                      default=["WHOLESELLER","E-COM","TRADE"] if role != 'Admin' else default_cx,
-                                                      placeholder="All CX Groups",
-                                                      key="s_cx_group")
-    else:
-        sel_cx_group = []
+        if 'Area_Sales_Man' in df_full.columns:
+            sel_asms = f1[2].multiselect(
+                "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
+                default=[], placeholder="All ASMs", key="cw_asm")
+        else:
+            sel_asms = []
 
-    if 'Customer_Type' in df_full.columns:
-        customer_filter = df_full.copy()
-        if sel_cx_group and 'CX_Group' in df_full.columns:
-            customer_filter = customer_filter[customer_filter['CX_Group'].isin(sel_cx_group)]
-        if sel_regions and 'Region' in df_full.columns:
-            customer_filter = customer_filter[customer_filter['Region'].isin(sel_regions)]
-        if sel_units and 'Unit' in df_full.columns:
-            customer_filter = customer_filter[customer_filter['Unit'].isin(sel_units)]
-        customer_options = customer_filter['Customer_Type'].dropna().unique().tolist()
-        sel_customer_types = region_unit_cols[3].multiselect("Customer Type",
-                                                            sorted(customer_options),
-                                                            default=[],
-                                                            placeholder="All Customer Types",
-                                                            key="s_cust_type")
-    else:
-        sel_customer_types = []
+    # ── Customer_Type / Mis_Remarks / Reason / Receivables_Health ───
+    detail_pool = asm_pool.copy()
+    if sel_asms and 'Area_Sales_Man' in detail_pool.columns:
+        detail_pool = detail_pool[detail_pool['Area_Sales_Man'].isin(sel_asms)]
 
-    # ── Apply Filters ─────────────────────────────────────────────────────────
+    with st.container():
+        st.markdown('<div class="filter-row-marker filter-row-4" style="display:none;"></div>', unsafe_allow_html=True)
+        f2 = st.columns([1, 1, 1, 1])
+
+        sel_cust_type = f2[0].multiselect(
+            "Customer_Type", sorted(detail_pool['Customer_Type'].dropna().unique().tolist()),
+            default=[], placeholder="Customer_Type", key="cw_custtype") if 'Customer_Type' in detail_pool.columns else []
+
+        sel_mis = f2[1].multiselect(
+            "Mis Remarks", sorted(detail_pool['Mis_Remarks'].dropna().unique().tolist()),
+            default=[], placeholder="Mis Remarks", key="cw_mis") if 'Mis_Remarks' in detail_pool.columns else []
+
+        sel_reason = f2[2].multiselect(
+            "Reason", sorted(detail_pool['Reason'].dropna().unique().tolist()),
+            default=[], placeholder="Reason", key="cw_reason") if 'Reason' in detail_pool.columns else []
+
+        sel_recv = f2[3].multiselect(
+            "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
+            default=[], placeholder="Receivables H...", key="cw_recv") if 'Receivables_Health' in detail_pool.columns else []
+
+    # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
-    if from_date and to_date and 'Date' in df.columns:
-        df = df[(df['Date'].dt.date >= from_date) & (df['Date'].dt.date <= to_date)]
     if sel_regions and 'Region' in df.columns:
         df = df[df['Region'].isin(sel_regions)]
     if sel_units and 'Unit' in df.columns:
         df = df[df['Unit'].isin(sel_units)]
-    if sel_cx_group and 'CX_Group' in df.columns:
-        df = df[df['CX_Group'].isin(sel_cx_group)]
-    if sel_customer_types and 'Customer_Type' in df.columns:
-        df = df[df['Customer_Type'].isin(sel_customer_types)]
+    if sel_asms and 'Area_Sales_Man' in df.columns:
+        df = df[df['Area_Sales_Man'].isin(sel_asms)]
+    if sel_cust_type and 'Customer_Type' in df.columns:
+        df = df[df['Customer_Type'].isin(sel_cust_type)]
+    if sel_mis and 'Mis_Remarks' in df.columns:
+        df = df[df['Mis_Remarks'].isin(sel_mis)]
+    if sel_reason and 'Reason' in df.columns:
+        df = df[df['Reason'].isin(sel_reason)]
+    if sel_recv and 'Receivables_Health' in df.columns:
+        df = df[df['Receivables_Health'].isin(sel_recv)]
 
-    # ── KPIs ──────────────────────────────────────────────────────────────────
-    total_sale     = df['Net_Sale'].sum()     if 'Net_Sale'     in df.columns else 0
-    total_cost     = df['Net_Cost'].sum()     if 'Net_Cost'     in df.columns else 0
-    total_discount = df['Net_Discount'].sum() if 'Net_Discount' in df.columns else 0
-    total_scheme   = df['Net_Scheme'].sum()   if 'Net_Scheme'   in df.columns else 0
-    profit  = total_sale - total_cost
-    gp_pct  = (profit / total_sale * 100)        if total_sale else 0
-    dis_pct = (total_discount / total_sale * 100) if total_sale else 0
+    if len(df) == 0:
+        st.warning("No data matches the selected filters.")
+        return
 
-    # Top-right period/user card
-    period_text = f"{from_date.strftime('%d %b %Y')} → {to_date.strftime('%d %b %Y')}" if from_date and to_date else "All time"
-    user_text = f"{full_name} ({role} • {region} • {unit})"
-    banner_col.markdown(f"""
-    <div class="period-banner" style="margin-top:6px;">
-        <div><div class="pb-label">📅 Period</div>
-        <div class="pb-value">{period_text}</div></div>
-        <div><div class="pb-label">👤 User</div>
-        <div class="pb-value">{user_text}</div></div>
-    </div>""", unsafe_allow_html=True)
+    # ══════════════════════════════════════════════════════════════
+    # SECTION 1 — Customer Trends & Business Impact
+    # ══════════════════════════════════════════════════════════════
+    total_customers = df['CustCode'].count() if 'CustCode' in df.columns else len(df)
+    customers_ordered = (df['Current_Month'] > 0).sum() if 'Current_Month' in df.columns else 0
+    ordered_pct = safe_pct(customers_ordered, total_customers)
 
-    # KPI Row
-    k = st.columns(6)
-    for col, icon, label, val, sub in [
-        (k[0], "💰", "NET SALES",    fmt(total_sale),     ""),
-        (k[1], "📦", "NET COST",     fmt(total_cost),     ""),
-        (k[2], "🏷️", "DISCOUNT",    fmt(total_discount), f"{dis_pct:.2f}%"),
-        (k[3], "🎁", "SCHEME",       fmt(total_scheme),   ""),
-        (k[4], "📈", "GROSS PROFIT", fmt(profit),         ""),
-        (k[5], "💹", "GP %",         f"{gp_pct:.2f}%",   ""),
-    ]:
-        col.markdown(f"""
-        <div class="kpi-card">
-            <div class="kpi-icon">{icon}</div>
-            <div class="kpi-label">{label}</div>
-            <div class="kpi-value">{val}</div>
-            {'<div class="kpi-sub">' + sub + '</div>' if sub else ''}
-        </div>""", unsafe_allow_html=True)
+    churn_this_month = (df['Mis_Remarks'] == '1.Churn This Month').sum() if 'Mis_Remarks' in df.columns else 0
+    churn_this_month_pct = safe_pct(churn_this_month, total_customers)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    churn_gt1_month = (df['Mis_Remarks'] == 'Churned').sum() if 'Mis_Remarks' in df.columns else 0
+    churn_gt1_month_pct = safe_pct(churn_gt1_month, total_customers)
 
-    # ── Tabs ──────────────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🌍  Region", "🏢  Unit", "👤  ASM", "👥  Customer", "📅  Trend"
-    ])
+    degrowth_customers = (df['Mis_Remarks'] == 'Degrowth').sum() if 'Mis_Remarks' in df.columns else 0
+    degrowth_pct = safe_pct(degrowth_customers, total_customers)
 
-    def export_excel(dataframe, filename, key):
-        buf = io.BytesIO()
-        dataframe.to_excel(buf, index=False)
-        st.download_button("📥 Export to Excel", buf.getvalue(),
-                           file_name=filename, mime="application/vnd.ms-excel", key=key)
+    shortfall_mask = df['Mis_Remarks'].isin(['Degrowth', '1.Churn This Month']) if 'Mis_Remarks' in df.columns else pd.Series([], dtype=bool)
+    sales_shortfall = df.loc[shortfall_mask, 'Sales_Deficit'].sum() if 'Sales_Deficit' in df.columns else 0
 
-    # Tab 1: Region
-    with tab1:
-        c1, c2 = st.columns(2)
-        with c1:
-            if 'Region' in df.columns:
-                rdf = df.groupby('Region', as_index=False)['Net_Sale'].sum().sort_values('Net_Sale', ascending=False)
-                fig = px.bar(rdf, x='Region', y='Net_Sale', color='Region',
-                             title='Region-wise Net Sales', color_discrete_sequence=COLORS,
-                             template='plotly_dark', text_auto='.2s')
-                fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-        with c2:
-            if 'Region' in df.columns:
-                fig2 = px.pie(rdf, names='Region', values='Net_Sale', title='Region Share',
-                              hole=0.45, color_discrete_sequence=COLORS, template='plotly_dark')
-                fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig2, use_container_width=True)
-        if 'State' in df.columns:
-            sdf = df.groupby('State', as_index=False)['Net_Sale'].sum().sort_values('Net_Sale', ascending=False).head(15)
-            fig3 = px.bar(sdf, x='Net_Sale', y='State', orientation='h', color='Net_Sale',
-                          color_continuous_scale='Purples', title='Top 15 States',
-                          template='plotly_dark', text_auto='.2s')
-            fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                               yaxis={'categoryorder':'total ascending'})
-            st.plotly_chart(fig3, use_container_width=True)
-        if 'Region' in df.columns:
-            st.markdown("<div class='sec-header'>Region Summary</div>", unsafe_allow_html=True)
-            rtbl = df.groupby('Region').agg(
-                Sales=('Net_Sale','sum'), Discount=('Net_Discount','sum'),
-                Cost=('Net_Cost','sum'), Scheme=('Net_Scheme','sum')
-            ).reset_index()
-            rtbl['Profit'] = rtbl['Sales'] - rtbl['Cost']
-            rtbl['GP %']   = (rtbl['Profit'] / rtbl['Sales'] * 100).round(2)
-            rtbl['Dis %']  = (rtbl['Discount'] / rtbl['Sales'] * 100).round(2)
-            export_excel(rtbl, "region_summary.xlsx", "exp_r")
-            for c in ['Sales','Discount','Cost','Scheme','Profit']:
-                rtbl[c] = rtbl[c].apply(lambda x: f"₹{x:,.0f}")
-            st.dataframe(rtbl, use_container_width=True, hide_index=True)
+    st.markdown("<div class='sec-title'>Customer Trends &amp; Business Impact</div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <table class="summary-table orange">
+        <tr>
+            <td rowspan="2" class="title-cell" style="width:11%;">Customer Trends<br>&amp; Business Impact</td>
+            <td class="col-header">Total Customers</td>
+            <td class="col-header">Customers Ordered</td>
+            <td class="col-header">Ordered %</td>
+            <td class="col-header">CHURN This Month</td>
+            <td class="col-header">% CMR Churn this Month</td>
+            <td class="col-header">CHUN &gt; 1 month</td>
+            <td class="col-header">% CHUN &gt; 1 month</td>
+            <td class="col-header">Degrown Customers</td>
+            <td class="col-header">Degrown%</td>
+            <td class="col-header">Short fall of Sales</td>
+        </tr>
+        <tr>
+            <td class="col-value">{fmt_count(total_customers)}</td>
+            <td class="col-value">{fmt_count(customers_ordered)}</td>
+            <td class="col-value">{fmt_pct(ordered_pct)}</td>
+            <td class="col-value">{fmt_count(churn_this_month)}</td>
+            <td class="col-value">{fmt_pct(churn_this_month_pct)}</td>
+            <td class="col-value">{fmt_count(churn_gt1_month)}</td>
+            <td class="col-value">{fmt_pct(churn_gt1_month_pct)}</td>
+            <td class="col-value">{fmt_count(degrowth_customers)}</td>
+            <td class="col-value">{fmt_pct(degrowth_pct)}</td>
+            <td class="col-value highlight">{fmt_inr(sales_shortfall)}</td>
+        </tr>
+    </table>
+    """, unsafe_allow_html=True)
 
-    # Tab 2: Unit
-    with tab2:
-        if 'Unit' in df.columns:
-            udf = df.groupby('Unit', as_index=False)['Net_Sale'].sum().sort_values('Net_Sale', ascending=False).head(20)
-            fig = px.bar(udf, x='Net_Sale', y='Unit', orientation='h', color='Net_Sale',
-                         color_continuous_scale='Blues', title='Unit-wise Net Sales (Top 20)',
-                         template='plotly_dark', text_auto='.2s')
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                              yaxis={'categoryorder':'total ascending'}, height=600)
-            st.plotly_chart(fig, use_container_width=True)
-            st.markdown("<div class='sec-header'>Unit Summary</div>", unsafe_allow_html=True)
-            utbl = df.groupby('Unit').agg(
-                Sales=('Net_Sale','sum'), Discount=('Net_Discount','sum'),
-                Cost=('Net_Cost','sum'), Scheme=('Net_Scheme','sum')
-            ).reset_index().sort_values('Sales', ascending=False)
-            utbl['Profit'] = utbl['Sales'] - utbl['Cost']
-            utbl['GP %']   = (utbl['Profit'] / utbl['Sales'] * 100).round(2)
-            utbl['Dis %']  = (utbl['Discount'] / utbl['Sales'] * 100).round(2)
-            export_excel(utbl, "unit_summary.xlsx", "exp_u")
-            for c in ['Sales','Discount','Cost','Scheme','Profit']:
-                utbl[c] = utbl[c].apply(lambda x: f"₹{x:,.0f}")
-            st.dataframe(utbl, use_container_width=True, hide_index=True)
+    # ══════════════════════════════════════════════════════════════
+    # SECTION 2 — Outstanding
+    # ══════════════════════════════════════════════════════════════
+    total_outstanding = df['Total_Outstanding'].sum() if 'Total_Outstanding' in df.columns else 0
 
-    # Tab 3: ASM
-    with tab3:
-        if 'Area_Sales_Man' in df.columns:
-            adf = df.groupby('Area_Sales_Man', as_index=False)['Net_Sale'].sum().sort_values('Net_Sale', ascending=False).head(20)
-            fig = px.bar(adf, x='Net_Sale', y='Area_Sales_Man', orientation='h', color='Net_Sale',
-                         color_continuous_scale='Greens', title='ASM-wise Net Sales (Top 20)',
-                         template='plotly_dark', text_auto='.2s')
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                              yaxis={'categoryorder':'total ascending'}, height=600)
-            st.plotly_chart(fig, use_container_width=True)
-            st.markdown("<div class='sec-header'>ASM Summary</div>", unsafe_allow_html=True)
-            atbl = df.groupby(['Area_Sales_Man','Unit'], as_index=False).agg(
-                Sales=('Net_Sale','sum'), Discount=('Net_Discount','sum'), Cost=('Net_Cost','sum')
-            ).sort_values('Sales', ascending=False)
-            atbl['Profit'] = atbl['Sales'] - atbl['Cost']
-            atbl['GP %']   = (atbl['Profit'] / atbl['Sales'] * 100).round(2)
-            atbl['Dis %']  = (atbl['Discount'] / atbl['Sales'] * 100).round(2)
-            export_excel(atbl, "asm_summary.xlsx", "exp_a")
-            for c in ['Sales','Discount','Cost','Profit']:
-                atbl[c] = atbl[c].apply(lambda x: f"₹{x:,.0f}")
-            st.dataframe(atbl, use_container_width=True, hide_index=True)
+    cx_gt90 = (df['G90'] > 0).sum() if 'G90' in df.columns else 0
+    os_gt90 = df['G90'].sum() if 'G90' in df.columns else 0
+    os_gt90_pct = safe_pct(os_gt90, total_outstanding)
 
-    # Tab 4: Customer
-    with tab4:
-        c1, c2 = st.columns(2)
-        with c1:
-            if 'Customer_Type' in df.columns:
-                ctdf = df.groupby('Customer_Type', as_index=False)['Net_Sale'].sum().sort_values('Net_Sale', ascending=False)
-                fig = px.pie(ctdf, names='Customer_Type', values='Net_Sale', title='Customer Type Share',
-                             hole=0.4, color_discrete_sequence=COLORS, template='plotly_dark')
-                fig.update_layout(paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-        with c2:
-            if 'Customer_Type' in df.columns:
-                fig2 = px.bar(ctdf, x='Customer_Type', y='Net_Sale', color='Customer_Type',
-                              title='Customer Type Sales', color_discrete_sequence=COLORS,
-                              template='plotly_dark', text_auto='.2s')
-                fig2.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig2, use_container_width=True)
-        if 'Customer' in df.columns:
-            st.markdown("<div class='sec-header'>Top 50 Customers</div>", unsafe_allow_html=True)
-            cust = df.groupby(['Customer','Customer_Type'], as_index=False).agg(
-                Sales=('Net_Sale','sum'), Discount=('Net_Discount','sum')
-            ).sort_values('Sales', ascending=False).head(50)
-            cust['Dis %'] = (cust['Discount'] / cust['Sales'] * 100).round(2)
-            export_excel(cust, "customer_summary.xlsx", "exp_c")
-            cust['Sales']    = cust['Sales'].apply(lambda x: f"₹{x:,.0f}")
-            cust['Discount'] = cust['Discount'].apply(lambda x: f"₹{x:,.0f}")
-            st.dataframe(cust, use_container_width=True, hide_index=True)
+    os_60_90 = df['61_to_90'].sum() if '61_to_90' in df.columns else 0
+    os_60_90_pct = safe_pct(os_60_90, total_outstanding)
 
-    # Tab 5: Trend
-    with tab5:
-        if 'Date' in df.columns:
-            mdf = df.groupby('Date', as_index=False).agg(
-                Net_Sale=('Net_Sale','sum'), Net_Discount=('Net_Discount','sum'),
-                Net_Cost=('Net_Cost','sum')
-            ).sort_values('Date')
-            mdf['Profit'] = mdf['Net_Sale'] - mdf['Net_Cost']
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=mdf['Date'], y=mdf['Net_Sale'], mode='lines+markers',
-                                     name='Net Sale', line=dict(color='#6366f1', width=3), marker=dict(size=8)))
-            fig.add_trace(go.Scatter(x=mdf['Date'], y=mdf['Profit'], mode='lines+markers',
-                                     name='Profit', line=dict(color='#10b981', width=2, dash='dot'), marker=dict(size=6)))
-            fig.add_trace(go.Bar(x=mdf['Date'], y=mdf['Net_Discount'], name='Discount',
-                                 marker_color='#f59e0b', opacity=0.5, yaxis='y2'))
-            fig.update_layout(title='Month-wise Sales Trend', template='plotly_dark',
-                              paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                              yaxis2=dict(overlaying='y', side='right', showgrid=False),
-                              legend=dict(orientation='h', yanchor='bottom', y=1.02))
-            st.plotly_chart(fig, use_container_width=True)
-            if 'Region' in df.columns:
-                mrdf = df.groupby(['Date','Region'], as_index=False)['Net_Sale'].sum().sort_values('Date')
-                fig2 = px.line(mrdf, x='Date', y='Net_Sale', color='Region',
-                               title='Month-wise by Region', markers=True,
-                               color_discrete_sequence=COLORS, template='plotly_dark')
-                fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig2, use_container_width=True)
-            if 'Unit' in df.columns:
-                mudf = df.groupby(['Date','Unit'], as_index=False)['Net_Sale'].sum().sort_values('Date')
-                fig3 = px.line(mudf, x='Date', y='Net_Sale', color='Unit',
-                               title='Month-wise by Unit', markers=True,
-                               color_discrete_sequence=COLORS, template='plotly_dark')
-                fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig3, use_container_width=True)
+    os_30_60 = df['31_to_60'].sum() if '31_to_60' in df.columns else 0
+    os_30_60_pct = safe_pct(os_30_60, total_outstanding)
+
+    os_0_30 = df['30_Days'].sum() if '30_Days' in df.columns else 0
+    os_0_30_pct = safe_pct(os_0_30, total_outstanding)
+
+    st.markdown("<div class='sec-title'>Outstanding</div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <table class="summary-table green">
+        <tr>
+            <td rowspan="2" class="title-cell" style="width:11%;">Outstanding</td>
+            <td class="col-header">#customers with &gt;90 Days</td>
+            <td class="col-header">OS Value &gt;90 Days</td>
+            <td class="col-header">%</td>
+            <td class="col-header">OS Value 60-90 Days</td>
+            <td class="col-header">%</td>
+            <td class="col-header">OS Value 30-60 Days</td>
+            <td class="col-header">%</td>
+            <td class="col-header">OS Value 0-30 Days</td>
+            <td class="col-header">%</td>
+            <td class="col-header">Total Outstanding</td>
+        </tr>
+        <tr>
+            <td class="col-value">{fmt_count(cx_gt90)}</td>
+            <td class="col-value highlight">{fmt_inr(os_gt90)}</td>
+            <td class="col-value">{fmt_pct(os_gt90_pct)}</td>
+            <td class="col-value highlight">{fmt_inr(os_60_90)}</td>
+            <td class="col-value">{fmt_pct(os_60_90_pct)}</td>
+            <td class="col-value">{fmt_inr(os_30_60)}</td>
+            <td class="col-value">{fmt_pct(os_30_60_pct)}</td>
+            <td class="col-value">{fmt_inr(os_0_30)}</td>
+            <td class="col-value">{fmt_pct(os_0_30_pct)}</td>
+            <td class="col-value">{fmt_inr(total_outstanding)}</td>
+        </tr>
+    </table>
+    """, unsafe_allow_html=True)
