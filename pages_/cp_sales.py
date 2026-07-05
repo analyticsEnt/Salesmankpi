@@ -77,8 +77,6 @@ def safe_pct(numer, denom):
     return (numer / denom * 100) if denom else 0.0
 
 
-
-
 def show():
     st.markdown("""
     <style>
@@ -339,19 +337,32 @@ def show():
     st.markdown(f'<div class="kpi-grid">{cards_html_2}</div>', unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════
-    # CUSTOMER DETAIL TABLE
+    # CUSTOMER DETAIL TABLE — with a full customer-name search box
+    # (a text search, not a dropdown, since there are 38,000+ unique
+    # customer names -- a multiselect would be far too slow to render
+    # and would still cap what's shown; typing to search covers all
+    # of them instantly).
     # ══════════════════════════════════════════════════════════════
-    st.markdown("<div class='sec-title'>Customer Details</div>", unsafe_allow_html=True)
+    title_col, search_col = st.columns([2, 2])
+    with title_col:
+        st.markdown("<div class='sec-title'>Customer Details</div>", unsafe_allow_html=True)
+    with search_col:
+        cust_search = st.text_input(
+            "Search Customer", value="", placeholder="Type customer name to search...",
+            key="cw_cust_search", label_visibility="collapsed",
+        )
 
     table_df = df.copy()
+    if cust_search and 'Customer' in table_df.columns:
+        table_df = table_df[table_df['Customer'].str.contains(cust_search, case=False, na=False)]
 
     display_cols = [c for c in [
-        'LPD','CustCode', 'Customer', 'Customer_Type', 'Mis_Remarks'
-        , 'Receivables_Health','Last_Month' ,'Current_Month', 'Sales_Deficit',
+        'LPD', 'CustCode', 'Customer', 'Customer_Type', 'Mis_Remarks',
+        'Receivables_Health', 'Last_Month', 'Current_Month', 'Sales_Deficit',
         'Total_Outstanding', 'Overdue_Value',
     ] if c in table_df.columns]
 
-    display_df = table_df[display_cols].head(500).copy()
+    display_df = table_df[display_cols].head(1000).copy()
 
     st.dataframe(
         display_df,
@@ -359,3 +370,5 @@ def show():
     )
     if len(table_df) > 1000:
         st.caption(f"Showing first 1000 of {len(table_df):,} matching rows.")
+    else:
+        st.caption(f"Showing {len(table_df):,} matching rows.")
