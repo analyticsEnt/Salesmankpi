@@ -206,16 +206,6 @@ def show():
             sel_asms = f1[2].multiselect(
                 "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
                 default=[], placeholder="All ASMs", key="cw_asm")
-            
-
-        asm_pool = unit_pool.copy()
-        if sel_units and 'Unit' in asm_pool.columns:
-            asm_pool = asm_pool[asm_pool['Unit'].isin(sel_units)]
-
-        if 'Area_Sales_Man' in df_full.columns:
-            sel_asms = f1[2].multiselect(
-                "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
-                default=[], placeholder="All ASMs", key="cw_asm")
         else:
             sel_asms = []
 
@@ -243,6 +233,10 @@ def show():
         sel_recv = f2[3].multiselect(
             "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
             default=[], placeholder="Receivables H...", key="cw_recv") if 'Receivables_Health' in detail_pool.columns else []
+        
+        sel_recv = f2[4].multiselect(
+            "Customer Name", sorted(detail_pool['Customer'].dropna().unique().tolist()),
+            default=[], placeholder="Customer Name", key="cw_recv") if 'Customer' in detail_pool.columns else []
 
     # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
