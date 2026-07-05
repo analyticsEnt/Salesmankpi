@@ -1,6 +1,3 @@
-from io import BytesIO
-import textwrap
-
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
@@ -80,86 +77,6 @@ def safe_pct(numer, denom):
     return (numer / denom * 100) if denom else 0.0
 
 
-def _pdf_escape(text: str) -> str:
-    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-
-
-def _text_to_pdf_stream(lines, page_width=612, page_height=792, margin=40, font_size=9, leading=12):
-    x = margin
-    y = page_height - margin
-    content = ["BT", f"/F1 {font_size} Tf", f"{x} {y} Td"]
-    for idx, line in enumerate(lines):
-        content.append(f"({_pdf_escape(line)}) Tj")
-        if idx < len(lines) - 1:
-            content.append(f"0 -{leading} Td")
-    content.append("ET")
-    return "\n".join(content).encode("latin-1")
-
-
-def build_pdf_bytes(df):
-    max_chars = 90
-    columns = [str(c) for c in df.columns]
-    header = " | ".join(columns)
-    rows = []
-    for row in df.itertuples(index=False, name=None):
-        rows.append(" | ".join("" if pd.isna(v) else str(v) for v in row))
-
-    lines = ["Customer Details", "", header, ""]
-    for row in rows:
-        if len(row) > max_chars:
-            row = row[: max_chars - 3] + "..."
-        lines.append(row)
-
-    lines_per_page = int((792 - 80) / 14)
-    page_chunks = [lines[i : i + lines_per_page] for i in range(0, len(lines), lines_per_page)]
-
-    pdf_objects = []
-    page_ids = []
-    stream_ids = []
-
-    for chunk in page_chunks:
-        stream = _text_to_pdf_stream(chunk)
-        stream_ids.append(len(pdf_objects) + 1)
-        pdf_objects.append(("stream", stream))
-
-    font_id = len(pdf_objects) + 1
-    pdf_objects.append(("font", b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"))
-
-    for stream_id in stream_ids:
-        page_ids.append(len(pdf_objects) + 1)
-        pdf_objects.append(("page", f"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 {font_id} 0 R >> >> /MediaBox [0 0 612 792] /Contents {stream_id} 0 R >>".encode("latin-1")))
-
-    kids = b" ".join(f"{pid} 0 R".encode("latin-1") for pid in page_ids)
-    pages_dict = f"<< /Type /Pages /Kids [ {kids.decode('latin-1')} ] /Count {len(page_ids)} >>".encode("latin-1")
-    pdf_objects.insert(0, ("pages", pages_dict))
-    pdf_objects.insert(0, ("catalog", b"<< /Type /Catalog /Pages 2 0 R >>"))
-
-    output = BytesIO()
-    output.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
-
-    offsets = []
-    for idx, (_, content) in enumerate(pdf_objects, start=1):
-        offsets.append(output.tell())
-        output.write(f"{idx} 0 obj\n".encode("latin-1"))
-        if _ == "stream":
-            output.write(f"<< /Length {len(content)} >>\nstream\n".encode("latin-1"))
-            output.write(content)
-            output.write(b"\nendstream\nendobj\n")
-        else:
-            output.write(content)
-            output.write(b"\nendobj\n")
-
-    xref_start = output.tell()
-    output.write(f"xref\n0 {len(pdf_objects) + 1}\n0000000000 65535 f \n".encode("latin-1"))
-    for offset in offsets:
-        output.write(f"{offset:010d} 00000 n \n".encode("latin-1"))
-    output.write(b"trailer\n")
-    output.write(f"<< /Size {len(pdf_objects) + 1} /Root 1 0 R >>\n".encode("latin-1"))
-    output.write(b"startxref\n")
-    output.write(f"{xref_start}\n".encode("latin-1"))
-    output.write(b"%%EOF")
-
-    return output.getvalue()
 
 
 def show():
@@ -436,29 +353,9 @@ def show():
 
     display_df = table_df[display_cols].head(500).copy()
 
-    export_cols = st.columns([1, 1, 1])
-    with export_cols[0]:
-        csv_bytes = display_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Download CSV",
-            data=csv_bytes,
-            file_name="customer_details.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-    with export_cols[1]:
-        pdf_bytes = build_pdf_bytes(display_df)
-        st.download_button(
-            label="Download PDF",
-            data=pdf_bytes,
-            file_name="customer_details.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
-
     st.dataframe(
         display_df,
         use_container_width=True, hide_index=True,
     )
-    if len(table_df) > 500:
-        st.caption(f"Showing first 500 of {len(table_df):,} matching rows.")
+    if len(table_df) > 1000:
+        st.caption(f"Showing first 1000 of {len(table_df):,} matching rows.")
