@@ -1,7 +1,18 @@
+from io import BytesIO
+
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
+
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
 
 @st.cache_resource
 def get_engine():
@@ -75,6 +86,38 @@ def fmt_pct(n):
 
 def safe_pct(numer, denom):
     return (numer / denom * 100) if denom else 0.0
+
+
+def build_pdf_bytes(df):
+    if not REPORTLAB_AVAILABLE:
+        raise RuntimeError("reportlab is not installed")
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+
+    table_data = [df.columns.astype(str).tolist()]
+    table_data.extend([ ["" if pd.isna(v) else str(v) for v in row] for row in df.values.tolist() ])
+
+    table = Table(table_data, repeatRows=1, hAlign="LEFT")
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
+        ("PADDING", (0, 0), (-1, -1), 4),
+    ]))
+
+    story = [
+        Paragraph("Customer Details", styles["Heading2"]),
+        Spacer(1, 8),
+        table,
+    ]
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 def show():
@@ -349,8 +392,33 @@ def show():
         'Total_Outstanding', 'Overdue_Value',
     ] if c in table_df.columns]
 
+    display_df = table_df[display_cols].head(500).copy()
+
+    export_cols = st.columns([1, 1, 1])
+    with export_cols[0]:
+        csv_bytes = display_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download CSV",
+            data=csv_bytes,
+            file_name="customer_details.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    with export_cols[1]:
+        if REPORTLAB_AVAILABLE:
+            pdf_bytes = build_pdf_bytes(display_df)
+            st.download_button(
+                label="Download PDF",
+                data=pdf_bytes,
+                file_name="customer_details.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        else:
+            st.caption("PDF export unavailable")
+
     st.dataframe(
-        table_df[display_cols].head(500),
+        display_df,
         use_container_width=True, hide_index=True,
     )
     if len(table_df) > 500:
