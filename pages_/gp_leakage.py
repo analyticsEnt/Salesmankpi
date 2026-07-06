@@ -16,8 +16,9 @@ def get_engine():
     )
 
 NUMERIC_COLS = [
-    'Current_Month', 'Sales_Deficit', 'Total_Outstanding', 'Overdue_Value',
-    '30_Days', '31_to_60', '61_to_90', 'G90',
+    'Current_Month', 'LMTD_Sales', 'CmtdSku', 'LlmtdSku',
+    'T10SkuVConage', 'T25SkuVConage', 'Total_Outstanding', 'Overdue_Value',
+    'Receivable_Days', 'OSage', 'ODage', 'Max_Sku',
 ]
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -40,60 +41,22 @@ def load_data(role, region, unit, asm_code):
     return df
 
 
-def fmt_inr(n):
-    """Rupee amount using Indian digit grouping (lakh/crore style),
-    e.g. 3789468 -> ₹37,89,468 -- matches the sample screenshot exactly."""
-    if pd.isna(n):
-        n = 0
-    n = int(round(n))
-    neg = n < 0
-    n = abs(n)
-    s = str(n)
-    if len(s) <= 3:
-        grouped = s
-    else:
-        last3 = s[-3:]
-        rest = s[:-3]
-        parts = []
-        while len(rest) > 2:
-            parts.insert(0, rest[-2:])
-            rest = rest[:-2]
-        if rest:
-            parts.insert(0, rest)
-        grouped = ",".join(parts) + "," + last3
-    return ("-" if neg else "") + "₹" + grouped
-
-def fmt_count(n):
-    if pd.isna(n):
-        return "0"
-    return f"{int(n):,}"
-
-def fmt_pct(n):
-    if pd.isna(n):
-        return "0%"
-    return f"{round(n)}%"
-
-def safe_pct(numer, denom):
-    return (numer / denom * 100) if denom else 0.0
-
-
 def show():
     st.markdown("""
     <style>
     /* ─── Force filter rows onto one line even on mobile ──────────
-       Same marker + :has() technique used on the Sales page: targets
-       ONLY the wrapped filter row, overriding Streamlit's default
-       column-stacking behavior below ~768px. */
+       Marker + :has() technique: targets ONLY the wrapped filter
+       row, overriding Streamlit's default column-stacking behavior
+       below ~768px. Both filter rows now have 4 items each, so they
+       share one identical grid rule -- 2-across by default, 4-across
+       once there's enough width (>=900px). */
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stHorizontalBlock"] {
         display: grid !important;
         gap: 10px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
-        width: auto !important;
+        width: 100% !important;
         min-width: 0 !important;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div .filter-row-3) [data-testid="stHorizontalBlock"] {
-        grid-template-columns: 1fr 1fr 1fr !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-4) [data-testid="stHorizontalBlock"] {
         grid-template-columns: 1fr 1fr !important;
@@ -104,69 +67,22 @@ def show():
         }
     }
 
-    /* ─── Section title ──────────────────────────────────────────── */
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
         margin: 18px 0 10px 0; padding: 0;
     }
 
-    /* ─── Responsive KPI grid (same pattern as the Sales page) ─────
-       CSS Grid reflows on its own -- 7 across on desktop, fewer on
-       narrower screens -- instead of a wide HTML table that can't
-       reflow at all on mobile. Font sizes use clamp() so text
-       auto-shrinks/grows with the available card width. */
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 10px;
-        margin-bottom: 8px;
+    /* ─── Consistent filter label/value font sizes across pages ──── */
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
+        font-size: 13px !important;
+        font-weight: 600 !important;
     }
-    .kpi-card {
-        background:linear-gradient(145deg,#0d1117,#111827);
-        border:1px solid #1f2937; border-radius:12px;
-        padding:10px 8px; position:relative; overflow:hidden;
-        transition:transform 0.2s,box-shadow 0.2s;
-    }
-    .kpi-card::before {
-        content:''; position:absolute; top:0; left:0;
-        width:4px; height:100%;
-        background:var(--accent, linear-gradient(180deg,#6366f1,#8b5cf6));
-    }
-    .kpi-card:hover { transform:translateY(-3px); box-shadow:0 12px 30px rgba(99,102,241,0.15); }
-    .kpi-label {
-        font-size: clamp(8px, 1.6vw, 10px);
-        font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
-        color: #6b7280; margin-bottom: 4px; line-height: 1.25;
-        overflow-wrap: normal; word-break: keep-all; hyphens: none;
-    }
-    .kpi-value {
-        font-size: clamp(13px, 3.2vw, 19px);
-        font-weight: 800; color: #f9fafb; line-height: 1.1;
-    }
-    .kpi-orange { --accent: linear-gradient(180deg,#f59e0b,#d97706); }
-    .kpi-orange .kpi-value { color:#fbbf24; }
-    .kpi-green  { --accent: linear-gradient(180deg,#10b981,#059669); }
-    .kpi-green  .kpi-value { color:#34d399; }
-    .kpi-highlight .kpi-value { color:#f87171 !important; }
-
-    @media screen and (max-width: 1100px) {
-        .kpi-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    @media screen and (max-width: 768px) {
-        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
-        .kpi-card { padding: 8px 6px; }
-    }
-    @media screen and (max-width: 480px) {
-        .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
-        .kpi-card { padding: 7px 5px; border-radius: 9px; }
-        .kpi-card::before { width: 3px; }
-        .kpi-label { font-size: clamp(6.5px, 2.1vw, 8px); margin-bottom: 2px; }
-        .kpi-value { font-size: clamp(11px, 3.6vw, 15px); }
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
+        font-size: 13px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    full_name = st.session_state.get('full_name', 'User')
     role      = st.session_state.get('role', 'ASM')
     region    = st.session_state.get('region', 'ALL')
     unit      = st.session_state.get('unit', 'ALL')
@@ -175,15 +91,17 @@ def show():
     with st.spinner("Loading data..."):
         df_full = load_data(role, region, unit, asm_code)
 
-    # ── Region + Unit + ASM filters (forced onto one row) ───────────
+    # ── Region + Unit + ASM + Customer (all one row, 4 columns) ─────
+    # Customer cascades from Region -> Unit -> ASM: e.g. picking ASM
+    # "xyz" narrows the Customer list to only that ASM's customers.
     with st.container():
-        st.markdown('<div class="filter-row-marker filter-row-3" style="display:none;"></div>', unsafe_allow_html=True)
-        f1 = st.columns([1, 1, 1])
+        st.markdown('<div class="filter-row-marker filter-row-4" style="display:none;"></div>', unsafe_allow_html=True)
+        f1 = st.columns([1, 1, 1, 1])
 
         if 'Region' in df_full.columns and role == 'Admin':
             sel_regions = f1[0].multiselect(
                 "Region", sorted(df_full['Region'].dropna().unique().tolist()),
-                default=[], placeholder="All Regions", key="cw_reg")
+                default=[], placeholder="All Regions", key="cm_reg")
         else:
             sel_regions = []
 
@@ -194,7 +112,7 @@ def show():
         if 'Unit' in df_full.columns:
             sel_units = f1[1].multiselect(
                 "Unit", sorted(unit_pool['Unit'].dropna().unique().tolist()),
-                default=[], placeholder="All Units", key="cw_unit")
+                default=[], placeholder="All Units", key="cm_unit")
         else:
             sel_units = []
 
@@ -205,14 +123,25 @@ def show():
         if 'Area_Sales_Man' in df_full.columns:
             sel_asms = f1[2].multiselect(
                 "Area Sales Man", sorted(asm_pool['Area_Sales_Man'].dropna().unique().tolist()),
-                default=[], placeholder="All ASMs", key="cw_asm")
+                default=[], placeholder="All ASMs", key="cm_asm")
         else:
             sel_asms = []
 
+        cust_pool = asm_pool.copy()
+        if sel_asms and 'Area_Sales_Man' in cust_pool.columns:
+            cust_pool = cust_pool[cust_pool['Area_Sales_Man'].isin(sel_asms)]
+
+        if 'Customer' in df_full.columns:
+            sel_customers = f1[3].multiselect(
+                "Customer", sorted(cust_pool['Customer'].dropna().unique().tolist()),
+                default=[], placeholder="All Customers", key="cm_customer")
+        else:
+            sel_customers = []
+
     # ── Customer_Type / Mis_Remarks / Reason / Receivables_Health ───
-    detail_pool = asm_pool.copy()
-    if sel_asms and 'Area_Sales_Man' in detail_pool.columns:
-        detail_pool = detail_pool[detail_pool['Area_Sales_Man'].isin(sel_asms)]
+    detail_pool = cust_pool.copy()
+    if sel_customers and 'Customer' in detail_pool.columns:
+        detail_pool = detail_pool[detail_pool['Customer'].isin(sel_customers)]
 
     with st.container():
         st.markdown('<div class="filter-row-marker filter-row-4" style="display:none;"></div>', unsafe_allow_html=True)
@@ -220,20 +149,19 @@ def show():
 
         sel_cust_type = f2[0].multiselect(
             "Customer_Type", sorted(detail_pool['Customer_Type'].dropna().unique().tolist()),
-            default=[], placeholder="Customer_Type", key="cw_custtype") if 'Customer_Type' in detail_pool.columns else []
+            default=[], placeholder="Customer_Type", key="cm_custtype") if 'Customer_Type' in detail_pool.columns else []
 
         sel_mis = f2[1].multiselect(
             "Mis Remarks", sorted(detail_pool['Mis_Remarks'].dropna().unique().tolist()),
-            default=[], placeholder="Mis Remarks", key="cw_mis") if 'Mis_Remarks' in detail_pool.columns else []
+            default=[], placeholder="Mis Remarks", key="cm_mis") if 'Mis_Remarks' in detail_pool.columns else []
 
         sel_reason = f2[2].multiselect(
             "Reason", sorted(detail_pool['Reason'].dropna().unique().tolist()),
-            default=[], placeholder="Reason", key="cw_reason") if 'Reason' in detail_pool.columns else []
+            default=[], placeholder="Reason", key="cm_reason") if 'Reason' in detail_pool.columns else []
 
         sel_recv = f2[3].multiselect(
             "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
-            default=[], placeholder="Receivables H...", key="cw_recv") if 'Receivables_Health' in detail_pool.columns else []
-        
+            default=[], placeholder="Receivables H...", key="cm_recv") if 'Receivables_Health' in detail_pool.columns else []
 
     # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
@@ -243,6 +171,8 @@ def show():
         df = df[df['Unit'].isin(sel_units)]
     if sel_asms and 'Area_Sales_Man' in df.columns:
         df = df[df['Area_Sales_Man'].isin(sel_asms)]
+    if sel_customers and 'Customer' in df.columns:
+        df = df[df['Customer'].isin(sel_customers)]
     if sel_cust_type and 'Customer_Type' in df.columns:
         df = df[df['Customer_Type'].isin(sel_cust_type)]
     if sel_mis and 'Mis_Remarks' in df.columns:
@@ -255,6 +185,7 @@ def show():
     if len(df) == 0:
         st.warning("No data matches the selected filters.")
         return
+
     # ══════════════════════════════════════════════════════════════
     # TABLE 1 — Customer Sales & Outstanding Detail
     # ══════════════════════════════════════════════════════════════
