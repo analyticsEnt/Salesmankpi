@@ -277,10 +277,6 @@ def show():
         table3_source = df
 
     t3_rename = {
-        'CX_Code': 'CX_Code',
-        'Customer': 'Customer',
-        'MktBy_Max': 'Large Company',
-        'Max_Sku': 'Large Sku',
         'SKU_vicinity': 'Sku Opportunity',
         'Manufacture_vicinity': 'Manufacture Opportunity',
     }
