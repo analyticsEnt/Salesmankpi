@@ -259,15 +259,12 @@ def show():
 
     t3_rename = {
         'CX_Code': 'CX_Code',
-        'Customer': 'Customer',
-        'MktBy_Max': 'Large Company',
-        'Max_Sku': 'Large Sku',
         'SKU_vicinity': 'Sku Opportunity',
         'Manufacture_vicinity': 'Manufacture Opportunity',
     }
     t3_cols = [c for c in t3_rename if c in table2_source.columns]
     table3_df = table2_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True)
 
-    st.dataframe(table2_df.head(500), use_container_width=True, hide_index=True)
-    if len(table2_source) > 500:
-        st.caption(f"Showing first 500 of {len(table2_source):,} matching rows.")
+    st.dataframe(table3_df.head(500), use_container_width=True, hide_index=True)
+    if len(table3_source) > 500:
+        st.caption(f"Showing first 500 of {len(table3_source):,} matching rows.")
