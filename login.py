@@ -1,4 +1,6 @@
 import streamlit as st
+import base64
+from pathlib import Path
 from sqlalchemy import create_engine, text
 from urllib.parse import quote_plus
 
@@ -13,6 +15,19 @@ def get_engine():
         f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}",
         pool_pre_ping=True, pool_recycle=3600,
     )
+
+@st.cache_data
+def get_logo_base64():
+    """Loads assets/logo.png (relative to this file) as base64 for
+    embedding directly in the HTML card. Returns None if the file
+    isn't found, so the page can fall back to the emoji instead of
+    crashing."""
+    logo_path = Path(__file__).parent / "assets" / "logo.png"
+    try:
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except FileNotFoundError:
+        return None
 
 def verify_user(username: str, password: str):
     try:
@@ -56,7 +71,14 @@ def show_login():
         box-shadow: 0 4px 15px rgba(99,102,241,0.3) !important;
     }
     .stButton > button:hover { transform: translateY(-2px) !important; }
-    
+
+    /* Logo image styling */
+    .login-logo-img {
+        height: 60px;
+        margin-bottom: 14px;
+        border-radius: 10px;
+    }
+
     /* Mobile Responsive Styles */
     @media screen and (max-width: 768px) {
         .block-container {
@@ -71,8 +93,9 @@ def show_login():
             height: 48px !important;
             font-size: 14px !important;
         }
+        .login-logo-img { height: 50px; }
     }
-    
+
     @media screen and (max-width: 480px) {
         .block-container {
             padding: 0.75rem !important;
@@ -86,6 +109,7 @@ def show_login():
             height: 44px !important;
             font-size: 13px !important;
         }
+        .login-logo-img { height: 42px; }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -93,9 +117,16 @@ def show_login():
     _, col, _ = st.columns([1, 1.4, 1])
     with col:
         st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
-        st.markdown("""
+
+        logo_b64 = get_logo_base64()
+        if logo_b64:
+            logo_html = f"<img class='login-logo-img' src='data:image/png;base64,{logo_b64}' />"
+        else:
+            logo_html = "<div style='font-size:48px; margin-bottom:10px;'>💊</div>"
+
+        st.markdown(f"""
         <div style='text-align:center; margin-bottom:8px;'>
-            <div style='font-size:48px; margin-bottom:10px;'>💊</div>
+            {logo_html}
             <div style='font-size:32px; font-weight:800;
                 background:linear-gradient(135deg,#818cf8,#c084fc);
                 -webkit-background-clip:text; -webkit-text-fill-color:transparent;'>
