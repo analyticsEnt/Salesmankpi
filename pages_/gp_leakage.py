@@ -80,6 +80,39 @@ def show():
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
         font-size: 13px !important;
     }
+
+    /* ─── Wrap-text table (used for Table 3) ────────────────────────
+       st.dataframe can't wrap cell text -- it always single-lines and
+       truncates with an ellipsis. This plain HTML table gives full
+       control via white-space:normal / word-wrap so long Sku/
+       Manufacture Opportunity text wraps across multiple lines. */
+    .wrap-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+        table-layout: fixed;
+    }
+    .wrap-table th {
+        background: rgba(99,102,241,0.12);
+        color: #a5b4fc;
+        font-weight: 700;
+        text-align: left;
+        padding: 8px 10px;
+        border: 1px solid #1f2937;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    .wrap-table td {
+        color: #e5e7eb;
+        padding: 8px 10px;
+        border: 1px solid #1f2937;
+        white-space: normal;
+        word-wrap: break-word;
+        vertical-align: top;
+    }
+    .wrap-table tr:nth-child(even) td {
+        background: rgba(255,255,255,0.02);
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -256,9 +289,10 @@ def show():
     if len(table2_source) > 500:
         st.caption(f"Showing first 500 of {len(table2_source):,} matching rows.")
 
-
-        # ══════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════
     # TABLE 3 — Growth Opportunity Detail (filtered by Table 1 click)
+    # Rendered as HTML (not st.dataframe) so long text wraps onto
+    # multiple lines instead of being truncated with an ellipsis.
     # ══════════════════════════════════════════════════════════════
     st.markdown("<div class='sec-title'>Growth Opportunity</div>", unsafe_allow_html=True)
 
@@ -281,10 +315,16 @@ def show():
         'Manufacture_vicinity': 'Manufacture Opportunity',
     }
     t3_cols = [c for c in t3_rename if c in table3_source.columns]
-    table3_df = table3_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True)
+    table3_df = table3_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True).head(500)
 
-    st.dataframe(table3_df.head(500), use_container_width=True, hide_index=True)
+    header_html = "".join(f"<th>{c}</th>" for c in table3_df.columns)
+    rows_html = "".join(
+        "<tr>" + "".join(f"<td>{'' if pd.isna(v) else v}</td>" for v in row) + "</tr>"
+        for row in table3_df.itertuples(index=False)
+    )
+    st.markdown(
+        f"<table class='wrap-table'><tr>{header_html}</tr>{rows_html}</table>",
+        unsafe_allow_html=True,
+    )
     if len(table3_source) > 500:
         st.caption(f"Showing first 500 of {len(table3_source):,} matching rows.")
-
-    
