@@ -285,9 +285,9 @@ def show():
     t2_cols = [c for c in t2_rename if c in table2_source.columns]
     table2_df = table2_source[t2_cols].rename(columns=t2_rename).reset_index(drop=True)
 
-    st.dataframe(table2_df.head(500), use_container_width=True, hide_index=True)
-    if len(table2_source) > 500:
-        st.caption(f"Showing first 500 of {len(table2_source):,} matching rows.")
+    st.dataframe(table2_df.head(5), use_container_width=True, hide_index=True)
+    if len(table2_source) > 5:
+        st.caption(f"Showing first 5 of {len(table2_source):,} matching rows.")
 
     # ══════════════════════════════════════════════════════════════
     # TABLE 3 — Growth Opportunity Detail (filtered by Table 1 click)
@@ -315,7 +315,7 @@ def show():
         'Manufacture_vicinity': 'Manufacture Opportunity',
     }
     t3_cols = [c for c in t3_rename if c in table3_source.columns]
-    table3_df = table3_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True).head(500)
+    table3_df = table3_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True).head(2)
 
     header_html = "".join(f"<th>{c}</th>" for c in table3_df.columns)
     rows_html = "".join(
@@ -326,5 +326,5 @@ def show():
         f"<table class='wrap-table'><tr>{header_html}</tr>{rows_html}</table>",
         unsafe_allow_html=True,
     )
-    if len(table3_source) > 500:
-        st.caption(f"Showing first 500 of {len(table3_source):,} matching rows.")
+    if len(table3_source) > 2:
+        st.caption(f"Showing first 2 of {len(table3_source):,} matching rows.")
