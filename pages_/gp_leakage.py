@@ -257,14 +257,38 @@ def show():
         st.caption(f"Showing first 500 of {len(table2_source):,} matching rows.")
 
 
+        # ══════════════════════════════════════════════════════════════
+    # TABLE 3 — Growth Opportunity Detail (filtered by Table 1 click)
+    # ══════════════════════════════════════════════════════════════
+    st.markdown("<div class='sec-title'>Growth Opportunity</div>", unsafe_allow_html=True)
+
+    if selected_custcode is not None:
+        st.markdown(
+            f"<div style='font-size:12px;color:#a5b4fc;margin-bottom:6px;'>"
+            f"Showing details for the customer selected in the table above "
+            f"(CustCode: <b>{selected_custcode}</b>).</div>",
+            unsafe_allow_html=True)
+        table3_source = df[df['CustCode'] == selected_custcode] if 'CustCode' in df.columns else df
+    else:
+        st.markdown(
+            "<div style='font-size:12px;color:#6b7280;margin-bottom:6px;'>"
+            "Click a row in the table above to filter this to a single customer.</div>",
+            unsafe_allow_html=True)
+        table3_source = df
+
     t3_rename = {
         'CX_Code': 'CX_Code',
+        'Customer': 'Customer',
+        'MktBy_Max': 'Large Company',
+        'Max_Sku': 'Large Sku',
         'SKU_vicinity': 'Sku Opportunity',
         'Manufacture_vicinity': 'Manufacture Opportunity',
     }
-    t3_cols = [c for c in t3_rename if c in table2_source.columns]
-    table3_df = table2_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True)
+    t3_cols = [c for c in t3_rename if c in table3_source.columns]
+    table3_df = table3_source[t3_cols].rename(columns=t3_rename).reset_index(drop=True)
 
     st.dataframe(table3_df.head(500), use_container_width=True, hide_index=True)
     if len(table3_source) > 500:
         st.caption(f"Showing first 500 of {len(table3_source):,} matching rows.")
+
+    
