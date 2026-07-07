@@ -79,6 +79,28 @@ def show_dashboard():
         transform: translateX(3px) !important;
         cursor: pointer !important;
     }
+
+    /* ─── Desktop: report tiles as a 2-column grid instead of a
+       full-width stacked list -- mobile is untouched (still the
+       original single-column list, which already looks good there). */
+    div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) div[data-testid="stButton"] button {
+        margin-bottom: 0 !important;
+        height: 100%;
+    }
+    @media screen and (max-width: 768px) {
+        div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) {
+            display: block !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) div[data-testid="stButton"] button {
+            margin-bottom: 10px !important;
+        }
+    }
+
     /* Logout tile styled distinctly (red-ish accent) */
     .logout-tile div[data-testid="stButton"] button {
         border-left-color: #ef4444 !important;
@@ -151,10 +173,12 @@ def show_dashboard():
 
         st.markdown("<div class='menu-section-label'>Reports</div>", unsafe_allow_html=True)
 
-        for key, icon, label in nav_items:
-            if st.button(f"{icon}   {label}", key=f"menu_{key}", use_container_width=True):
-                st.session_state.current_page = key
-                st.rerun()
+        with st.container():
+            st.markdown('<div class="menu-grid-marker" style="display:none;"></div>', unsafe_allow_html=True)
+            for key, icon, label in nav_items:
+                if st.button(f"{icon}   {label}", key=f"menu_{key}", use_container_width=True):
+                    st.session_state.current_page = key
+                    st.rerun()
 
         st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
         st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
