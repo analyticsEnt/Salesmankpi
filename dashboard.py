@@ -80,28 +80,6 @@ def show_dashboard():
         cursor: pointer !important;
     }
 
-    /* ─── Desktop: ALL tiles (reports + logout) sit in one row via
-       auto-fit -- adjusts automatically if tiles are added/removed
-       later, rather than a hardcoded column count. Mobile is
-       untouched (still the original single-column list). */
-    div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
-        gap: 12px !important;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) div[data-testid="stButton"] button {
-        margin-bottom: 0 !important;
-        height: 100%;
-    }
-    @media screen and (max-width: 768px) {
-        div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) {
-            display: block !important;
-        }
-        div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) div[data-testid="stButton"] button {
-            margin-bottom: 10px !important;
-        }
-    }
-
     /* Logout tile styled distinctly (red-ish accent) */
     .logout-tile div[data-testid="stButton"] button {
         border-left-color: #ef4444 !important;
@@ -174,13 +152,14 @@ def show_dashboard():
 
         st.markdown("<div class='menu-section-label'>Reports</div>", unsafe_allow_html=True)
 
-        with st.container():
-            st.markdown('<div class="menu-grid-marker" style="display:none;"></div>', unsafe_allow_html=True)
-            for key, icon, label in nav_items:
+        menu_cols = st.columns(len(nav_items) + 1)
+        for i, (key, icon, label) in enumerate(nav_items):
+            with menu_cols[i]:
                 if st.button(f"{icon}   {label}", key=f"menu_{key}", use_container_width=True):
                     st.session_state.current_page = key
                     st.rerun()
 
+        with menu_cols[-1]:
             st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
             if st.button("🚪   Logout", key="menu_logout", use_container_width=True):
                 st.session_state.logged_in = False
