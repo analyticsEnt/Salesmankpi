@@ -80,12 +80,13 @@ def show_dashboard():
         cursor: pointer !important;
     }
 
-    /* ─── Desktop: report tiles as a 2-column grid instead of a
-       full-width stacked list -- mobile is untouched (still the
-       original single-column list, which already looks good there). */
+    /* ─── Desktop: ALL tiles (reports + logout) sit in one row via
+       auto-fit -- adjusts automatically if tiles are added/removed
+       later, rather than a hardcoded column count. Mobile is
+       untouched (still the original single-column list). */
     div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) {
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
         gap: 12px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .menu-grid-marker) div[data-testid="stButton"] button {
@@ -180,13 +181,12 @@ def show_dashboard():
                     st.session_state.current_page = key
                     st.rerun()
 
-        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-        st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
-        if st.button("🚪   Logout", key="menu_logout", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user = None
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
+            if st.button("🚪   Logout", key="menu_logout", use_container_width=True):
+                st.session_state.logged_in = False
+                st.session_state.user = None
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
         return  # don't render any page content on the menu screen
 
     # ══════════════════════════════════════════════════════════════
