@@ -79,7 +79,6 @@ def show_dashboard():
         transform: translateX(3px) !important;
         cursor: pointer !important;
     }
-
     /* Logout tile styled distinctly (red-ish accent) */
     .logout-tile div[data-testid="stButton"] button {
         border-left-color: #ef4444 !important;
@@ -152,20 +151,18 @@ def show_dashboard():
 
         st.markdown("<div class='menu-section-label'>Reports</div>", unsafe_allow_html=True)
 
-        menu_cols = st.columns(len(nav_items) + 1)
-        for i, (key, icon, label) in enumerate(nav_items):
-            with menu_cols[i]:
-                if st.button(f"{icon}   {label}", key=f"menu_{key}", use_container_width=True):
-                    st.session_state.current_page = key
-                    st.rerun()
-
-        with menu_cols[-1]:
-            st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
-            if st.button("🚪   Logout", key="menu_logout", use_container_width=True):
-                st.session_state.logged_in = False
-                st.session_state.user = None
+        for key, icon, label in nav_items:
+            if st.button(f"{icon}   {label}", key=f"menu_{key}", use_container_width=True):
+                st.session_state.current_page = key
                 st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='logout-tile'>", unsafe_allow_html=True)
+        if st.button("🚪   Logout", key="menu_logout", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user = None
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
         return  # don't render any page content on the menu screen
 
     # ══════════════════════════════════════════════════════════════
