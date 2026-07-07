@@ -129,9 +129,9 @@ def show_dashboard():
 
     nav_items = [
         ("sales",      "📊", "Summary"),
-        ("cp_sales",   "💊", "Customer Wise"),
-        ("fy_sales",   "📅", "Insights"),
-        ("metrics",    "📈", "Sales Metrics"),
+        ("cp_sales",   "👤", "Customer Wise"),
+        ("fy_sales",   "📈", "Insights"),
+        ("metrics",    "🎯", "Sales Opportunity"),
     ]
     page_titles = {k: f"{icon}  {label}" for k, icon, label in nav_items}
 
