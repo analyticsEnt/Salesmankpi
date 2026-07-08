@@ -225,7 +225,7 @@ def show():
     st.markdown("<div class='sec-title'>Customer Sales &amp; Outstanding</div>", unsafe_allow_html=True)
 
     t1_rename = {
-        'CustCode': 'CustCode',
+        'CX_Code': 'CX_Code',
         'Customer': 'Customer',
         'LMTD_Sales': 'LMTD Sales',
         'Current_Month': 'Current Month',
@@ -279,8 +279,6 @@ def show():
         'Customer': 'Customer',
         'MktBy_Max': 'Large Company',
         'Max_Sku': 'Large Sku',
-        'SKU_vicinity': 'Sku Opportunity',
-        'Manufacture_vicinity': 'Manufacture Opportunity',
     }
     t2_cols = [c for c in t2_rename if c in table2_source.columns]
     table2_df = table2_source[t2_cols].rename(columns=t2_rename).reset_index(drop=True)
