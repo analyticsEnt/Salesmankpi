@@ -253,7 +253,7 @@ def show():
     selected_custcode = None
     if event1 and event1.selection and event1.selection.rows:
         row_idx = event1.selection.rows[0]
-        selected_custcode = table1_df.iloc[row_idx]['CustCode']
+        selected_custcode = table1_df.iloc[row_idx]['CX_Code'] if 'CX_Code' in table1_df.columns else None
 
     # ══════════════════════════════════════════════════════════════
     # TABLE 2 — Growth Opportunity Detail (filtered by Table 1 click)
@@ -266,7 +266,7 @@ def show():
             f"Showing details for the customer selected in the table above "
             f"(CustCode: <b>{selected_custcode}</b>).</div>",
             unsafe_allow_html=True)
-        table2_source = df[df['CustCode'] == selected_custcode] if 'CustCode' in df.columns else df
+        table2_source = df[df['CX_Code'] == selected_custcode] if 'CX_Code' in df.columns else df
     else:
         st.markdown(
             "<div style='font-size:12px;color:#6b7280;margin-bottom:6px;'>"
@@ -300,7 +300,7 @@ def show():
             f"Showing details for the customer selected in the table above "
             f"(CustCode: <b>{selected_custcode}</b>).</div>",
             unsafe_allow_html=True)
-        table3_source = df[df['CustCode'] == selected_custcode] if 'CustCode' in df.columns else df
+        table3_source = df[df['CX_Code'] == selected_custcode] if 'CX_Code' in df.columns else df
     else:
         st.markdown(
             "<div style='font-size:12px;color:#6b7280;margin-bottom:6px;'>"
