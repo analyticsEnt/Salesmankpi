@@ -40,11 +40,14 @@ def load_data(role, region, unit, asm_code):
 
     if role != 'Admin':
         if region != 'ALL' and 'Region' in df.columns:
-            df = df[df['Region'] == region]
+            vals = region if isinstance(region, list) else [region]
+            df = df[df['Region'].isin(vals)]
         if unit != 'ALL' and 'Unit' in df.columns:
-            df = df[df['Unit'] == unit]
+            vals = unit if isinstance(unit, list) else [unit]
+            df = df[df['Unit'].isin(vals)]
         if asm_code != 'ALL' and 'ASM_Code' in df.columns:
-            df = df[df['ASM_Code'] == asm_code]
+            vals = asm_code if isinstance(asm_code, list) else [asm_code]
+            df = df[df['ASM_Code'].isin(vals)]
 
     return df
 
