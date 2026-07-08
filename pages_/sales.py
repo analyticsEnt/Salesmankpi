@@ -192,6 +192,8 @@ def show():
     unit      = st.session_state.get('unit', 'ALL')
     asm_code  = st.session_state.get('asm_code', 'ALL')
 
+    st.write("DEBUG asm_code:", asm_code, type(asm_code))   # ← add this line temporarily
+
     with st.spinner("Loading data..."):
         df_full = load_data(role, region, unit, asm_code)
 
