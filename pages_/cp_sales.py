@@ -365,7 +365,7 @@ def show():
         table_df = table_df[table_df['Customer'].isin(sel_customers)]
 
     display_cols = [c for c in [
-        'Mis_Remarks','LPD', 'CustCode', 'Customer',
+        'Mis_Remarks','LPD', 'CX_CODE', 'Customer',
          'Last_Month', 'Current_Month', 'Sales_Deficit',
         'Total_Outstanding', 'Overdue_Value',
     ] if c in table_df.columns]
