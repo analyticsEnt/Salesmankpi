@@ -18,7 +18,7 @@ def get_engine():
 NUMERIC_COLS = [
     'Current_Month', 'LMTD_Sales', 'CmtdSku', 'LlmtdSku',
     'T10SkuVConage', 'T25SkuVConage', 'Total_Outstanding', 'Overdue_Value',
-    'Receivable_Days', 'OSage', 'ODage', 'Max_Sku',
+    'Receivable_Days', 'OSage', 'ODage',
 ]
 
 @st.cache_data(ttl=300, show_spinner=False)
