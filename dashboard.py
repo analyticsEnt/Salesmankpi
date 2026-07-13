@@ -99,47 +99,24 @@ def show_dashboard():
         margin-bottom: 6px !important;
         border-bottom: 1px solid #1a1f35 !important;
     }
-
-    /* Lock the Home button's column to a FIXED pixel width via CSS
-       Grid. Uses the SAME :has()-based descendant-selector pattern
-       already proven to work for the filter rows elsewhere in this
-       app -- NOT a sibling combinator (+), which was the actual bug
-       in every previous attempt: the marker div sits nested one
-       level deeper (inside its own wrapper) than the stHorizontalBlock
-       it needed to target, so "+ div" could never match it. */
-    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) [data-testid="stHorizontalBlock"] {
-        display: grid !important;
-        grid-template-columns: 120px 1fr !important;
-        gap: 10px !important;
-        align-items: center !important;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) [data-testid="stColumn"] {
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    /* Home button: single-line pill, never stretched, never wrapped. */
-    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button {
-        width: 100% !important;
+    /* Home button: single-line pill, never stretched, never wrapped */
+    .page-topbar-marker + div div[data-testid="stButton"] button {
+        width: auto !important;
+        min-width: 90px !important;
         white-space: nowrap !important;
-        overflow: visible !important;
         background: rgba(99,102,241,0.1) !important;
         border: 1px solid #6366f1 !important;
         border-radius: 8px !important;
         color: #a5b4fc !important;
         font-size: 12px !important;
         font-weight: 700 !important;
-        padding: 6px 10px !important;
+        padding: 6px 14px !important;
         margin-bottom: 0 !important;
     }
-    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button:hover {
+    .page-topbar-marker + div div[data-testid="stButton"] button:hover {
         background: rgba(99,102,241,0.2) !important;
         transform: none !important;
     }
-    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button p {
-        white-space: nowrap !important;
-    }
-
     .page-title-text {
         font-size: 15px; font-weight: 700; color: #f3f4f6;
         display: flex; align-items: center; margin-top: 6px;
