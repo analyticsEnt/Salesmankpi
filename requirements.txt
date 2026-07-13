@@ -1,6 +1,6 @@
-streamlit
-plotly
-sqlalchemy
-pymysql
-pandas
-openpyxl
+streamlit==1.38.0
+plotly==5.22.0
+sqlalchemy==2.0.30
+pymysql==1.1.1
+pandas==2.2.2
+openpyxl==3.1.2
