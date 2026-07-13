@@ -101,28 +101,25 @@ def show_dashboard():
     }
 
     /* Lock the Home button's column to a FIXED pixel width via CSS
-       Grid, instead of Streamlit's own proportional st.columns()
-       ratio -- that ratio computed inconsistently between mobile
-       and desktop under Streamlit 1.38, causing the button to be
-       squeezed narrow (and its text to letter-wrap) on desktop only.
-       A fixed 120px first column is guaranteed wide enough on any
-       screen size, so this can no longer happen regardless of
-       viewport width or Streamlit version quirks. */
-    .page-topbar-marker + div[data-testid="stHorizontalBlock"] {
+       Grid. Uses the SAME :has()-based descendant-selector pattern
+       already proven to work for the filter rows elsewhere in this
+       app -- NOT a sibling combinator (+), which was the actual bug
+       in every previous attempt: the marker div sits nested one
+       level deeper (inside its own wrapper) than the stHorizontalBlock
+       it needed to target, so "+ div" could never match it. */
+    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) [data-testid="stHorizontalBlock"] {
         display: grid !important;
         grid-template-columns: 120px 1fr !important;
         gap: 10px !important;
         align-items: center !important;
     }
-    .page-topbar-marker + div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) [data-testid="stColumn"] {
         width: 100% !important;
         min-width: 0 !important;
     }
 
-    /* Home button: single-line pill, never stretched, never wrapped.
-       Targets the button element directly (not tied to one specific
-       data-testid) so it survives Streamlit version differences. */
-    .page-topbar-marker + div[data-testid="stHorizontalBlock"] button {
+    /* Home button: single-line pill, never stretched, never wrapped. */
+    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button {
         width: 100% !important;
         white-space: nowrap !important;
         overflow: visible !important;
@@ -135,11 +132,11 @@ def show_dashboard():
         padding: 6px 10px !important;
         margin-bottom: 0 !important;
     }
-    .page-topbar-marker + div[data-testid="stHorizontalBlock"] button:hover {
+    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button:hover {
         background: rgba(99,102,241,0.2) !important;
         transform: none !important;
     }
-    .page-topbar-marker + div[data-testid="stHorizontalBlock"] button p {
+    div[data-testid="stVerticalBlock"]:has(> div .page-topbar-marker) button p {
         white-space: nowrap !important;
     }
 
