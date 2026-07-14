@@ -204,8 +204,8 @@ def show():
             default=[], placeholder="Reason", key="cm_reason") if 'Reason' in detail_pool.columns else []
 
         sel_recv = f2[3].multiselect(
-            "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
-            default=[], placeholder="Receivables H...", key="cm_recv") if 'Receivables_Health' in detail_pool.columns else []
+            "Pin Code", sorted(detail_pool['Pin_Code'].dropna().unique().tolist()),
+            default=[], placeholder="Pin Code", key="cm_recv") if 'Pin_Code' in detail_pool.columns else []
 
     # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
@@ -223,8 +223,8 @@ def show():
         df = df[df['Mis_Remarks'].isin(sel_mis)]
     if sel_reason and 'Reason' in df.columns:
         df = df[df['Reason'].isin(sel_reason)]
-    if sel_recv and 'Receivables_Health' in df.columns:
-        df = df[df['Receivables_Health'].isin(sel_recv)]
+    if sel_recv and 'Pin_Code' in df.columns:
+        df = df[df['Pin_Code'].isin(sel_recv)]
 
     if len(df) == 0:
         st.warning("No data matches the selected filters.")
