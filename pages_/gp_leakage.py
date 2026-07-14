@@ -52,7 +52,7 @@ def show():
        once there's enough width (>=900px). */
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stHorizontalBlock"] {
         display: grid !important;
-        gap: 10px !important;
+        gap: 20px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
         width: 100% !important;
