@@ -67,6 +67,22 @@ def show():
         }
     }
 
+    /* ─── Stretch the actual dropdown widget to fill its column ────
+       Without this, the select box stays at its own content-based
+       width (~140px) and sits left-aligned inside a much wider grid
+       column, leaving a big empty gap and forcing the label above it
+       to wrap awkwardly onto two lines. */
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stMultiSelect"],
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stSelectbox"] {
+        width: 100% !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] {
+        width: 100% !important;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] > div {
+        width: 100% !important;
+    }
+
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
         margin: 18px 0 10px 0; padding: 0;
@@ -76,6 +92,7 @@ def show():
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
         font-size: 13px !important;
         font-weight: 600 !important;
+        white-space: nowrap !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
         font-size: 13px !important;
