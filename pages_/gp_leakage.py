@@ -140,7 +140,7 @@ def show():
     # "xyz" narrows the Customer list to only that ASM's customers.
     with st.container():
         st.markdown('<div class="filter-row-marker filter-row-4" style="display:none;"></div>', unsafe_allow_html=True)
-        f1 = st.columns([1, 1, 1, 1])
+        f1 = st.columns([1.2, 1.2, 1.5, 2.8])
 
         if 'Region' in df_full.columns and role == 'Admin':
             sel_regions = f1[0].multiselect(
