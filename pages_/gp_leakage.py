@@ -67,16 +67,6 @@ def show():
         }
     }
 
-    /* ─── Stretch every level inside the filter column so the actual
-       dropdown fills it, regardless of what Streamlit's internal
-       select-wrapper class/testid happens to be named in this
-       version. Targets EVERY div nested inside the column instead of
-       guessing a specific class name. */
-    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] > div,
-    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] div[class] {
-        width: 100% !important;
-    }
-
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
         margin: 18px 0 10px 0; padding: 0;
@@ -86,7 +76,6 @@ def show():
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
         font-size: 13px !important;
         font-weight: 600 !important;
-        white-space: nowrap !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
         font-size: 13px !important;
