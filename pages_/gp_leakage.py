@@ -52,7 +52,7 @@ def show():
        once there's enough width (>=900px). */
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stHorizontalBlock"] {
         display: grid !important;
-        gap: 20px !important;
+        gap: 10px !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] {
         width: 100% !important;
@@ -67,16 +67,6 @@ def show():
         }
     }
 
-    /* ─── Stretch every level inside the filter column so the actual
-       dropdown fills it, regardless of what Streamlit's internal
-       select-wrapper class/testid happens to be named in this
-       version. Targets EVERY div nested inside the column instead of
-       guessing a specific class name. */
-    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] > div,
-    div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-testid="stColumn"] div[class] {
-        width: 100% !important;
-    }
-
     .sec-title {
         font-size: 15px; font-weight: 800; color: #f3f4f6;
         margin: 18px 0 10px 0; padding: 0;
@@ -86,7 +76,6 @@ def show():
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) label[data-testid="stWidgetLabel"] p {
         font-size: 13px !important;
         font-weight: 600 !important;
-        white-space: nowrap !important;
     }
     div[data-testid="stVerticalBlock"]:has(> div .filter-row-marker) [data-baseweb="select"] * {
         font-size: 13px !important;
@@ -140,7 +129,7 @@ def show():
     # "xyz" narrows the Customer list to only that ASM's customers.
     with st.container():
         st.markdown('<div class="filter-row-marker filter-row-4" style="display:none;"></div>', unsafe_allow_html=True)
-        f1 = st.columns([1.2, 1.2, 1.5, 2.8])
+        f1 = st.columns([1, 1, 1, 1])
 
         if 'Region' in df_full.columns and role == 'Admin':
             sel_regions = f1[0].multiselect(
@@ -204,8 +193,8 @@ def show():
             default=[], placeholder="Reason", key="cm_reason") if 'Reason' in detail_pool.columns else []
 
         sel_recv = f2[3].multiselect(
-            "Pin Code", sorted(detail_pool['Pin_Code'].dropna().unique().tolist()),
-            default=[], placeholder="Pin Code", key="cm_recv") if 'Pin_Code' in detail_pool.columns else []
+            "Receivables Health", sorted(detail_pool['Receivables_Health'].dropna().unique().tolist()),
+            default=[], placeholder="Receivables H...", key="cm_recv") if 'Receivables_Health' in detail_pool.columns else []
 
     # ── Apply all filters ────────────────────────────────────────────
     df = df_full.copy()
@@ -223,8 +212,8 @@ def show():
         df = df[df['Mis_Remarks'].isin(sel_mis)]
     if sel_reason and 'Reason' in df.columns:
         df = df[df['Reason'].isin(sel_reason)]
-    if sel_recv and 'Pin_Code' in df.columns:
-        df = df[df['Pin_Code'].isin(sel_recv)]
+    if sel_recv and 'Receivables_Health' in df.columns:
+        df = df[df['Receivables_Health'].isin(sel_recv)]
 
     if len(df) == 0:
         st.warning("No data matches the selected filters.")
